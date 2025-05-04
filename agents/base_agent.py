@@ -5,8 +5,8 @@ import logging
 # Direct import from project structure
 from core.interfaces import AgentInterface, LLMInterface, MemoryInterface
 from utils.token_utils import calculate_chat_tokens, calculate_string_tokens, get_tokenizer
+from utils.log_main import logger  # Import the custom debate logger
 
-logger = logging.getLogger(__name__)
 
 class BaseAgent(AgentInterface):
     """Base class for all agents, handling common initialization and interaction flow."""
@@ -43,7 +43,7 @@ class BaseAgent(AgentInterface):
                     template_content = f.read()
             self._prompt_wrapper_template = template_content
             if template_content:
-                logger.info(f"Successfully loaded prompt wrapper template for {self.agent_name} from {self.prompt_wrapper_path}.")
+                logger.debug(f"Successfully loaded prompt wrapper template for {self.agent_name} from {self.prompt_wrapper_path}.")
             else:
                 logger.error(f"Prompt wrapper file is empty: {self.prompt_wrapper_path}")
 
@@ -65,7 +65,7 @@ class BaseAgent(AgentInterface):
         self.token_used = 0
         self.prompt_tokens_used = 0
         self.completion_tokens_used = 0
-        logger.info(f"{self.agent_name} memory/state reset.")
+        logger.debug(f"{self.agent_name} memory/state reset.")
 
     def get_memory_tokens(self) -> Dict[str, int]:
         """
@@ -158,7 +158,7 @@ class BaseAgent(AgentInterface):
 
         # Replace the last message in the history
         final_prompt_to_send = prompt[:-1] + [final_user_message]
-        logger.debug(f"Applied prompt wrapper. Final user message: {wrapped_content[:100]}...")
+        logger.debug(f"Applied prompt wrapper. Final user message: {wrapped_content[:100]}...") #TODO:: check if seen in log that is sent from base agent
         return final_prompt_to_send
 
 

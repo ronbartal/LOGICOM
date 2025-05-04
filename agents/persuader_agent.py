@@ -7,8 +7,7 @@ import logging
 from agents.base_agent import BaseAgent
 from core.interfaces import LLMInterface, MemoryInterface, INTERNAL_USER_ROLE, INTERNAL_AI_ROLE
 from utils.token_utils import calculate_string_tokens, calculate_chat_tokens
-
-logger = logging.getLogger(__name__)
+from utils.log_main import logger
 
 class PersuaderAgent(BaseAgent):
     """Agent responsible for persuading, potentially using a helper LLM for feedback."""
@@ -47,7 +46,7 @@ class PersuaderAgent(BaseAgent):
                 if not self._helper_template_content:
                     logger.error(f"Helper prompt template file is empty: {helper_prompt_wrapper_path}")
                     raise ValueError("Helper prompt template file is empty.")
-                logger.info(f"Successfully loaded helper prompt template for {self.agent_name} from {helper_prompt_wrapper_path}")
+                logger.debug("Persuader loaded helper prompt template", )
             except FileNotFoundError:
                 logger.error(f"Helper prompt template file not found: {helper_prompt_wrapper_path}")
                 raise
@@ -71,7 +70,8 @@ class PersuaderAgent(BaseAgent):
         self.helper_prompt_tokens_used = 0
         self.helper_completion_tokens_used = 0
         self.helper_token_used = 0
-        logger.info(f"{self.agent_name} helper token counts reset.")
+        logger.debug("Persuader reset helper token counts", 
+                   extra={"msg_type": "token_management"})
 
     def call(self, opponent_message: Optional[str] = None) -> str:
         """
@@ -87,57 +87,59 @@ class PersuaderAgent(BaseAgent):
         if opponent_message is None:
             initial_prompt = self.initial_prompt
             self.memory.add_ai_message(initial_prompt)
-            logger.info(f"{self.agent_name} sending initial prompt.")
+            logger.info("Persuader sending initial prompt to memory: {initial_prompt}", 
+                      extra={"msg_type": "memory_operation", "operation": "write", "agent_name": self.agent_name})
             return initial_prompt
         # --- End Initial Turn Handling ---
 
         # Add opponent message to memory if provided (Standard turn)
         self.memory.add_user_message(opponent_message)
+        logger.debug(f"Persuader added opponent message to memory: {opponent_message}", 
+                   extra={"msg_type": "memory_operation", "operation": "write", "agent_name": self.agent_name})
 
         # Get prompt history from memory (includes opponent message)
         prompt_history = self.memory.get_history_as_prompt()
+        logger.debug(f"Persuader retrieved message history from memory: {prompt_history}", 
+                   extra={"msg_type": "memory_operation", "operation": "read", "agent_name": self.agent_name}) #TODO:: check_log
 
         # Apply prompt wrapping using the BaseAgent helper method
         final_prompt_to_send = self._apply_prompt_wrapper(prompt_history)
+        logger.debug(f"Persuader applied prompt wrapper to history:{final_prompt_to_send}", 
+                   extra={"msg_type": "prompt_operation", "agent_name": self.agent_name})#TODO:: check_log
 
         # Call the main LLM via BaseAgent helper using the wrapped prompt
         response_content = self._generate_response(final_prompt_to_send)
+        logger.debug(f"Persuader generated response from LLM: {response_content}", 
+                   extra={"msg_type": "llm_operation", "agent_name": self.agent_name})
         
         # Prepare default metadata and final response (in case helper is not used or fails)
         final_response_to_send = response_content
-        feedback_tag = None
         
-        # Store details for logging within memory
-        log_metadata = {
-             "prompt_sent": final_prompt_to_send,
-             "raw_response": response_content 
-        }
-
         # Process helper feedback if enabled
         if self.use_helper_feedback:
-            # _get_helper_refinement returns: (refined_response, feedback_tag_str, helper_prompt_history, raw_feedback)
-            refined_response, feedback_tag, helper_prompt_sent, helper_raw_response = self._get_helper_refinement(response_content)
-            
-            # Assign the refined response for sending
-            final_response_to_send = refined_response 
-                        
-            # Add helper details to memory log metadata
-            log_metadata["helper_prompt_sent"] = helper_prompt_sent
-            log_metadata["helper_raw_response"] = helper_raw_response
-            log_metadata["feedback_tag"] = feedback_tag 
+            # _get_helper_refinement now only returns (refined_response, feedback_tag_str)
+            final_response_to_send = self._get_helper_refinement(response_content)
+            logger.debug(f"Persuader used helper to refine response", 
+                       extra={"msg_type": "helper_operation", "agent_name": self.agent_name})
 
-
-        # Add final AI message to memory with collected metadata
-        self.memory.add_ai_message(message=final_response_to_send, **log_metadata)
-
+        # Add final AI message to memory without extra metadata
+        self.memory.add_ai_message(message=final_response_to_send)
+        logger.info("Persuador added own response to memory", 
+                  extra={"msg_type": "memory_operation", "operation": "write", "agent_name": self.agent_name})
+        
+        logger.info(f"Persuader response to debater {final_response_to_send}", 
+                       extra={"msg_type": "main debate", "agent_name": self.agent_name, "sender": self.agent_name, "receiver": "debater"})
         # Return only the final response string
         return final_response_to_send
 
-    def _get_helper_refinement(self, persuader_response: str) -> Tuple[str, str, List[Dict[str,str]], str]:
+    def _get_helper_refinement(self, persuader_response: str) -> str: #TODO: Check if more logging needed
         """
-        Calls the helper LLM, parses the JSON response, and returns refinement details.
+        Calls the helper LLM, parses the JSON response, and returns the refined response.
         Expected JSON format: {"response": "<rewritten_text>", "feedback_tag": "<tag_name>"}.
         Raises exceptions if parsing/validation fails.
+        
+        Returns:
+            The refined response string
         """
         if not self.helper_llm_client or not self._helper_template_content: 
             raise RuntimeError("Helper LLM client or prompt template content not properly initialized.")
@@ -155,7 +157,8 @@ class PersuaderAgent(BaseAgent):
         
         # Call helper LLM
         raw_feedback = self.helper_llm_client.generate(helper_prompt_history, **self.helper_model_config)
-        logger.debug(f"Raw helper response: {raw_feedback}")
+        logger.debug("Helper generated response", 
+                   extra={"msg_type": "llm_operation", "agent_name": self.agent_name})
 
         # Estimate helper completion tokens using token_utils
         completion_tokens = calculate_string_tokens(raw_feedback)
@@ -164,6 +167,8 @@ class PersuaderAgent(BaseAgent):
         self.helper_prompt_tokens_used += prompt_tokens
         self.helper_completion_tokens_used += completion_tokens
         self.helper_token_used = self.helper_prompt_tokens_used + self.helper_completion_tokens_used
+        logger.debug(f"Updated helper token counts: {self.helper_token_used}", 
+                   extra={"msg_type": "token_management"})
 
         # Attempt to clean and parse the standard JSON format
         cleaned_feedback = raw_feedback.strip()
@@ -187,16 +192,16 @@ class PersuaderAgent(BaseAgent):
         refined_response = str(refinement_dict["response"])
         feedback_tag_str = str(refinement_dict["feedback_tag"])
 
-        logger.info(f"Successfully parsed helper feedback (Tag: {feedback_tag_str}).")
+        logger.debug(f"Helper refined response", 
+                   extra={"msg_type": "helper_operation", "agent_name": self.agent_name, "feedback_tag": feedback_tag_str}) # TODO:: check_log
         
-        # Return the necessary information used by 'call'
-        # (refined response, feedback tag, prompt, raw response)
-        return refined_response, feedback_tag_str, helper_prompt_history, raw_feedback
+        # Return only the refined response and feedback tag
+        return refined_response
 
     def _format_history_for_helper(self, history_log: List[Any]) -> str:
         """Helper to convert internal log format to a simple text string for helper prompts."""
+        logger.debug("Formatting history")
         history_lines = []
-
         for entry in history_log:
             if entry.get('type') == 'message' and isinstance(entry.get('data'), dict):
                 role = entry['data'].get('role')
