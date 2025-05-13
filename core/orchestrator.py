@@ -50,18 +50,19 @@ class DebateOrchestrator:
 
     
 # The main loop of the debate
-    def run_debate(self, topic_id: str, claim: str, log_config: Dict[str, Any], helper_type_name: str) -> Dict[str, Any]:
+    def run_debate(self, topic_id: str, claim: str, log_config: Dict[str, Any], helper_type_name: str, chat_id: str) -> Dict[str, Any]:
         """
         Runs a single debate for the given topic.
 
         Args:
-            topic_id
-            claim
+            topic_id: Identifier for the debate topic.
+            claim: The claim text to debate.
             log_config: Dictionary with logging parameters ('log_base_path', 'log_formats', etc.).
             helper_type_name: Name identifying (for logging).
+            chat_id: Unique identifier for this chat (required).
         """
         # Initialize debate
-        chat_id = self._initialize_debate(topic_id, helper_type_name)
+        self._initialize_debate(topic_id, helper_type_name, chat_id)
         
         # Initialize state
         keep_talking = True
@@ -107,7 +108,7 @@ class DebateOrchestrator:
             helper_type_name=helper_type_name
         )
 
-    def _initialize_debate(self, topic_id: str, helper_type_name: str) -> str:
+    def _initialize_debate(self, topic_id: str, helper_type_name: str, chat_id: str = None) -> str:
         """Initialize a new debate session."""
         # Reset all agents
         self.persuader.reset()
@@ -115,19 +116,19 @@ class DebateOrchestrator:
         self.moderator_terminator.reset()
         self.moderator_topic.reset()
 
-        # Generate unique ID
-        chat_id = str(uuid.uuid4())
-        
-        # Log initial setup TODO:: check duplicates in log
-        logger.debug(f"\n--- Starting Debate --- Topic: {topic_id}, Chat ID: {chat_id} ---")
-        logger.debug(f"Config: {helper_type_name}")
-        logger.debug(f"Persuader: {self.persuader.agent_name}, LLM: {self.persuader.llm_client.__class__.__name__}")
-        logger.debug(f"Debater: {self.debater.agent_name}, LLM: {self.debater.llm_client.__class__.__name__}")
-        logger.debug(f"Moderator (Terminator): {self.moderator_terminator.agent_name}")
-        logger.debug(f"Moderator (Topic): {self.moderator_topic.agent_name}")
-        logger.debug(f"Max rounds limit set to: {self.max_rounds}")
+        # Log initial setup 
+        logger.debug(f"Starting Debate, Topic: {topic_id}, Chat ID: {chat_id}", 
+                   extra={"msg_type": "system", "topic_id": topic_id, "chat_id": chat_id})
+        logger.debug(f"Config: {helper_type_name}", extra={"msg_type": "system"})
+        logger.debug(f"Persuader: {self.persuader.agent_name}, LLM: {self.persuader.llm_client.__class__.__name__}", 
+                   extra={"msg_type": "system"})
+        logger.debug(f"Debater: {self.debater.agent_name}, LLM: {self.debater.llm_client.__class__.__name__}", 
+                   extra={"msg_type": "system"})
+        logger.debug(f"Moderator (Terminator): {self.moderator_terminator.agent_name}", extra={"msg_type": "system"})
+        logger.debug(f"Moderator (Topic): {self.moderator_topic.agent_name}", extra={"msg_type": "system"})
+        logger.debug(f"Max rounds limit set to: {self.max_rounds}", extra={"msg_type": "system"})
 
-        return chat_id
+        return
 
     def _run_persuader_turn(self, previous_debater_response: str) -> str:
         """Run the persuader's turn in the debate."""

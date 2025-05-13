@@ -2,6 +2,7 @@ import os
 import sys
 import argparse
 import pandas as pd
+import uuid
 from tqdm import tqdm
 from typing import Dict, Any, Optional, Tuple
 import logging
@@ -14,6 +15,7 @@ from utils.set_api_keys import set_environment_variables_from_file, API_KEYS_PAT
 from config.loader import load_app_config
 from core.orchestrator import DebateOrchestrator
 from core.debate_setup import DebateInstanceSetup
+from utils.utils import create_debate_directory, save_debate_logs
 
 # Use colorama for terminal colors
 from colorama import init, Fore, Style
@@ -135,7 +137,18 @@ def main():
             logger.info(f"\n===== Preparing Claim Index: {index}, Topic ID: {topic_id} ====", 
                        extra={"msg_type": "system"})
             run_result = {}
+            
             try:
+                # Generate chat ID early
+                chat_id = str(uuid.uuid4())
+                if not chat_id:
+                    logger.error(f"Failed to generate a valid chat_id for topic {topic_id}", extra={"msg_type": "system"})
+                    raise ValueError("Failed to generate a valid chat_id")
+                
+                # Create directory structure for logs
+                chat_dir = create_debate_directory(topic_id, chat_id, helper_type_name)
+                logger.info(f"Created debate chat directory: {chat_dir}", extra={"msg_type": "system"})
+                
                 # Instantiate setup class for this claim
                 setup = DebateInstanceSetup(
                     agents_configuration=agent_configs_for_run,
@@ -144,7 +157,7 @@ def main():
                     claim_data=claim_data
                     # Removed resolved_llm_providers/summarizer args
                 )
-                logger.debug(f"Debater setup complete")
+                logger.debug(f"Debater setup complete", extra={"msg_type": "system"})
 
                 # Instantiate orchestrator 
                 orchestrator = DebateOrchestrator(
@@ -154,17 +167,18 @@ def main():
                     moderator_topic_checker=setup.moderator_topic_checker,
                     max_rounds=args.max_rounds if args.max_rounds is not None else int(debate_settings.get('max_rounds', 12))
                 )
-                logger.debug(f"Orchestrator setup complete")
+                logger.debug(f"Orchestrator setup complete", extra={"msg_type": "system"})
                 
-                # Run debate
+                # Run debate with the pre-generated chat_id
                 run_result = orchestrator.run_debate(
                     topic_id=topic_id, claim=claim_text,
                     log_config=debate_settings,
-                    helper_type_name=helper_type_name
+                    helper_type_name=helper_type_name,
+                    chat_id=chat_id
                 )
-                logger.debug(f"Debate run complete")
+                logger.debug(f"Debate run complete", extra={"msg_type": "system"})
                 run_result['status'] = 'Success'
-
+                
             except Exception as e:
                 # Handle setup or runtime errors 
                 logger.error(f"!!!!! Error running debate for Topic ID {topic_id} (Index {index}): {e} !!!!!", 
@@ -180,6 +194,18 @@ def main():
             logger.info(f"Debate run complete", extra={"msg_type": "main debate", 
                         "topic_id": topic_id, "claim_index": index, "status": "Success",
                         "result": run_result.get("result"), "rounds": run_result.get("rounds")})
+            
+            # Save debate logs to debate directory if run was successful
+            if run_result.get('status') == 'Success':
+                logger.debug(f"Saving debate logs to {chat_dir}", extra={"msg_type": "system"})
+                success = save_debate_logs(chat_dir, remove_originals=True)
+                if success:
+                    logger.info(f"Debate logs saved to directory: {chat_dir}", 
+                              extra={"msg_type": "system"})
+                else:
+                    logger.warning(f"Failed to save debate logs to {chat_dir}", 
+                                 extra={"msg_type": "system"})
+
 
         # At the end, instead of processing in-memory results:
         logger.info(f"All debates completed", extra={"msg_type": "system"})

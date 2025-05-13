@@ -63,6 +63,7 @@ class SystemMessageFilter(logging.Filter):
 
 def setup_logging():
     """Initialize logging configuration with proper queue setup"""
+    
     # Ensure logs directory exists
     if not os.path.exists('logs'):
         os.makedirs('logs')
