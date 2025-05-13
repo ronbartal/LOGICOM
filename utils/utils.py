@@ -1,6 +1,9 @@
 import os
 import shutil
 import json
+import pandas as pd
+from openpyxl import load_workbook
+import openpyxl
 from utils.log_main import logger
 
 def create_debate_directory(topic_id, chat_id, helper_type):
@@ -113,6 +116,88 @@ def save_debate_logs(chat_dir, remove_originals=True):
             
     except Exception as e:
         logger.error(f"Error saving debate logs: {e}", 
+                   extra={"msg_type": "system"})
+        return False
+
+def save_debate_in_excel(topic_id, claim_data, helper_type, chat_id, result):
+    """
+    Save debate results to a central Excel file. Creates the file if it doesn't exist,
+    otherwise appends to the existing file.
+    
+    Args:
+        topic_id: Identifier for the debate topic
+        claim_data: Dictionary with claim information including the claim text
+        helper_type: Type of helper used (no_helper, vanilla_helper, fallacy_helper)
+        chat_id: Unique identifier for this specific chat instance
+        result: Integer result status (1=convinced, 0=not convinced, 2=other)
+        
+    Returns:
+        bool: True if successful, False otherwise
+    """
+    excel_file = "all_debates_summary.xlsx"
+    
+    try:
+        # Get the claim text from the claim data
+        claim = claim_data.get('claim', 'Unknown claim')
+        
+        # Prepare the new row data with chat_id as the last column
+        new_row = {
+            'topic_id': topic_id,
+            'claim': claim,
+            'helper_type': helper_type,
+            'result': result,
+            'chat_id': chat_id
+        }
+        
+        # Check if the file already exists
+        if os.path.exists(excel_file):
+            # Load existing file
+            try:
+                df = pd.read_excel(excel_file)
+                # Append new row
+                df = pd.concat([df, pd.DataFrame([new_row])], ignore_index=True)
+            except Exception as e:
+                logger.error(f"Error reading existing Excel file: {e}", extra={"msg_type": "system"})
+                # If there's an error with the file, create a new one
+                df = pd.DataFrame([new_row])
+        else:
+            # Create new dataframe with headers
+            df = pd.DataFrame([new_row])
+        
+        # Calculate statistics in the same sheet
+        success_counts = {}
+        total_counts = {}
+        
+        # Group by helper_type and calculate statistics
+        for h_type in df['helper_type'].unique():
+            filtered_df = df[df['helper_type'] == h_type]
+            success_count = sum(filtered_df['result'] == 1)
+            total_count = len(filtered_df)
+            success_rate = (success_count / total_count * 100) if total_count > 0 else 0
+            
+            success_counts[h_type] = success_count
+            total_counts[h_type] = total_count
+        
+        # Add statistics rows at the bottom
+        for h_type in success_counts.keys():
+            stats_row = {
+                'topic_id': f"STATS: {h_type}",
+                'claim': f"Total: {total_counts[h_type]}",
+                'helper_type': f"Success: {success_counts[h_type]}",
+                'result': f"Rate: {success_counts[h_type]/total_counts[h_type]*100:.1f}%" if total_counts[h_type] > 0 else "Rate: 0%",
+                'chat_id': ""
+            }
+            df = pd.concat([df, pd.DataFrame([stats_row])], ignore_index=True)
+        
+        # Save dataframe to Excel
+        df.to_excel(excel_file, index=False)
+            
+        logger.info(f"Successfully updated debate summary in {excel_file}", 
+                   extra={"msg_type": "system"})
+        return True
+        
+    except Exception as e:
+        logger.error(f"Error saving debate to Excel: {e}", 
                    extra={"msg_type": "system"})
         return False
 

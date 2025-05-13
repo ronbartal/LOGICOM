@@ -15,7 +15,7 @@ from utils.set_api_keys import set_environment_variables_from_file, API_KEYS_PAT
 from config.loader import load_app_config
 from core.orchestrator import DebateOrchestrator
 from core.debate_setup import DebateInstanceSetup
-from utils.utils import create_debate_directory, save_debate_logs
+from utils.utils import create_debate_directory, save_debate_logs, save_debate_in_excel
 
 # Use colorama for terminal colors
 from colorama import init, Fore, Style
@@ -194,6 +194,25 @@ def main():
             logger.info(f"Debate run complete", extra={"msg_type": "main debate", 
                         "topic_id": topic_id, "claim_index": index, "status": "Success",
                         "result": run_result.get("result"), "rounds": run_result.get("rounds")})
+            #I want to create one single xslx file that will hold the results of all debates
+            #the columns should be: topic_id, claim, helper type, chat id, rounds, result
+            #the rows should be the results of each debate
+            #the file should be saved in the debate directory
+            #the file should be named "debates_all_results.xlsx"
+            #also, the last row should be the total count of success(overall and percentage) for each helper type
+            status = 2
+            try:
+                if run_result.get('final_result_status') == 'Success':
+                    status = 1
+                elif run_result.get('final_result_status') == 'Not convinced':
+                    status = 0
+                else:
+                    status = 2
+            except Exception as e:
+                logger.warning(f"Error determining debate status: {e}", extra={"msg_type": "system"})
+                status = 2
+
+            save_debate_in_excel(topic_id,claim_data,helper_type_name,chat_id,status)
             
             # Save debate logs to debate directory if run was successful
             if run_result.get('status') == 'Success':

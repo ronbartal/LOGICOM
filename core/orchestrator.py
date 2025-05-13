@@ -92,7 +92,7 @@ class DebateOrchestrator:
 
         # Handle max rounds reached
         if round_number >= self.max_rounds:
-            final_result_status = "Persuader Fail (Max Rounds)"
+            final_result_status = "Not convinced"
             finish_reason = "Max rounds reached"
             logger.debug(f"Debate ended: Reached max rounds ({self.max_rounds})." , extra={"msg_type": "main debate"})
 
