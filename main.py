@@ -27,8 +27,8 @@ logger = debate_logger
 # --- Argument Parsing --- 
 def define_arguments() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Run AI Debates with Reworked Architecture")
-    parser.add_argument("--config_run_name", default="Default_NoHelper", 
-                        help="Name of the agent configuration section in settings.yaml to use.")
+    parser.add_argument("--helper_type", default="Default_NoHelper", 
+                        help="Name of the helper type configuration in settings.yaml to use.")
     parser.add_argument("--claim_index", type=int, default=None, 
                         help="Index of the specific claim in the dataset to run (0-based). Runs all if not specified.")
     parser.add_argument("--settings_path", default="./config/settings.yaml", 
@@ -68,7 +68,7 @@ def main():
         # Load Configs
         config = load_app_config(args.settings_path, args.models_path)
         debate_settings = config['settings']['debate_settings']
-        run_config_name = args.config_run_name or "Default_NoHelper"
+        run_config_name = args.helper_type or "Default_NoHelper"
         logger.info(f"Using agent run configuration: {run_config_name}", extra={"msg_type": "system"})
         agent_configs_for_run = config['settings']['agent_configurations'].get(run_config_name)
         if not agent_configs_for_run:
@@ -165,6 +165,7 @@ def main():
                     debater=setup.debater,
                     moderator_terminator=setup.moderator_terminator,
                     moderator_topic_checker=setup.moderator_topic_checker,
+                    moderator_conviction=setup.moderator_conviction,
                     max_rounds=args.max_rounds if args.max_rounds is not None else int(debate_settings.get('max_rounds', 12))
                 )
                 logger.debug(f"Orchestrator setup complete", extra={"msg_type": "system"})
@@ -202,12 +203,12 @@ def main():
             #also, the last row should be the total count of success(overall and percentage) for each helper type
             status = 2
             try:
-                if run_result.get('final_result_status') == 'Success':
-                    status = 1
-                elif run_result.get('final_result_status') == 'Not convinced':
-                    status = 0
+                if run_result.get('result') == 'Convinced':
+                    status = 1  # Debater was convinced = success
+                elif run_result.get('result') == 'Not convinced':
+                    status = 0  # Debater was not convinced
                 else:
-                    status = 2
+                    status = 2  # Other outcomes (terminated, off-topic, etc.)
             except Exception as e:
                 logger.warning(f"Error determining debate status: {e}", extra={"msg_type": "system"})
                 status = 2

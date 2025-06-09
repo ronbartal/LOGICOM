@@ -27,7 +27,7 @@ debate_settings:
   summarizer_system_prompt_path: ./prompts/memory/summary_instruction.txt
 
 agent_configurations:
-  Default_NoHelper:
+  Default_No_Helper:
     helper_type_name: "No_Helper" 
 
     persuader:
@@ -64,10 +64,11 @@ agent_configurations:
       # Paths based on original hardcoded names for PaLM/Gemini prompts
       prompt_terminator_path: ./prompts/moderator/moderator_terminator_instruction.txt
       prompt_topic_checker_path: ./prompts/moderator/moderator_topic_instruction.txt
+      prompt_conviction_path: ./prompts/moderator/moderator_conviction_instruction.txt
       # model_config_override: { temperature: 0.5 } # Gemini client default is 0.5
 
   # --- Default with Fallacy Helper Enabled --- 
-  Default_FallacyHelper:
+  Default_Fallacy_Helper:
     helper_type_name: "Fallacy_Helper"
 
     persuader:
@@ -97,10 +98,11 @@ agent_configurations:
       llm_config_ref: gemini_15_flash_8b
       prompt_terminator_path: ./prompts/moderator/moderator_terminator_instruction.txt
       prompt_topic_checker_path: ./prompts/moderator/moderator_topic_instruction.txt
+      prompt_conviction_path: ./prompts/moderator/moderator_conviction_instruction.txt
 
   # --- Default with Vanilla Helper Enabled --- 
   
-  Default_LogicalHelper:
+  Default_Logical_Helper:
     helper_type_name: "Logical_Helper"
 
     persuader:

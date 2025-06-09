@@ -164,31 +164,6 @@ def save_debate_in_excel(topic_id, claim_data, helper_type, chat_id, result):
             # Create new dataframe with headers
             df = pd.DataFrame([new_row])
         
-        # Calculate statistics in the same sheet
-        success_counts = {}
-        total_counts = {}
-        
-        # Group by helper_type and calculate statistics
-        for h_type in df['helper_type'].unique():
-            filtered_df = df[df['helper_type'] == h_type]
-            success_count = sum(filtered_df['result'] == 1)
-            total_count = len(filtered_df)
-            success_rate = (success_count / total_count * 100) if total_count > 0 else 0
-            
-            success_counts[h_type] = success_count
-            total_counts[h_type] = total_count
-        
-        # Add statistics rows at the bottom
-        for h_type in success_counts.keys():
-            stats_row = {
-                'topic_id': f"STATS: {h_type}",
-                'claim': f"Total: {total_counts[h_type]}",
-                'helper_type': f"Success: {success_counts[h_type]}",
-                'result': f"Rate: {success_counts[h_type]/total_counts[h_type]*100:.1f}%" if total_counts[h_type] > 0 else "Rate: 0%",
-                'chat_id': ""
-            }
-            df = pd.concat([df, pd.DataFrame([stats_row])], ignore_index=True)
-        
         # Save dataframe to Excel
         df.to_excel(excel_file, index=False)
             

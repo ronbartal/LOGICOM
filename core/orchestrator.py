@@ -37,12 +37,14 @@ class DebateOrchestrator:
                  # Individual moderator agents
                  moderator_terminator: ModeratorAgent,
                  moderator_topic_checker: ModeratorAgent,
+                 moderator_conviction: ModeratorAgent,
                  # Settings
                  max_rounds: int):
         self.persuader = persuader
         self.debater = debater
         self.moderator_terminator = moderator_terminator
         self.moderator_topic = moderator_topic_checker
+        self.moderator_conviction = moderator_conviction
 
         self.max_rounds = max_rounds
 
@@ -84,6 +86,11 @@ class DebateOrchestrator:
             # Run Debater's turn
             debater_response = self._run_debater_turn(current_persuader_response)
             
+            # Check if debater was convinced after their response
+            if self._run_conviction_check(debater_response=debater_response, debater_memory=self.debater.memory):
+                final_result_status = "Convinced"
+                finish_reason = "Debater convinced"
+                break
 
             keep_talking, final_result_status, finish_reason = self._run_moderation_checks(
                 persuader_memory=self.persuader.memory, #TODO: memory shouldnt be accessed from orchastrator
@@ -115,6 +122,7 @@ class DebateOrchestrator:
         self.debater.reset()
         self.moderator_terminator.reset()
         self.moderator_topic.reset()
+        self.moderator_conviction.reset()
 
         # Log initial setup 
         logger.debug(f"Starting Debate, Topic: {topic_id}, Chat ID: {chat_id}", 
@@ -126,6 +134,7 @@ class DebateOrchestrator:
                    extra={"msg_type": "system"})
         logger.debug(f"Moderator (Terminator): {self.moderator_terminator.agent_name}", extra={"msg_type": "system"})
         logger.debug(f"Moderator (Topic): {self.moderator_topic.agent_name}", extra={"msg_type": "system"})
+        logger.debug(f"Moderator (Conviction): {self.moderator_conviction.agent_name}", extra={"msg_type": "system"})
         logger.debug(f"Max rounds limit set to: {self.max_rounds}", extra={"msg_type": "system"})
 
         return
@@ -215,6 +224,34 @@ class DebateOrchestrator:
         else: #TODO: Decide if this should be a warning or an error
             logger.warning(f"Topic check response format unclear: {topic_result}. Defaulting to on-topic." , extra={"msg_type": "main debate", "sender": "moderator"})
             return True
+
+    def _run_conviction_check(self, debater_response: str,debater_memory: MemoryInterface) -> Tuple[bool]:
+        """Run the conviction check moderation and return whether debate should end with conviction."""
+        # Get recent history for conviction check - focus on the last few exchanges
+        recent_history = self._get_recent_history(debater_memory, count=4)  # Last 2 exchanges
+        moderator_logs = []
+        
+        conviction_result = self.moderator_conviction.call(recent_history)
+        moderator_logs.append({
+            "moderator_name": self.moderator_conviction.agent_name,
+            "raw_response": conviction_result
+        })
+        
+        raw_text = conviction_result.strip().upper()
+        
+        if '<CONVINCED>' in raw_text:
+            logger.debug("Parser found CONVINCED signal.", extra={"msg_type": "main debate", "sender": "moderator"})
+            # Log the conviction result to memories
+            return True
+        
+        elif '<NOT-CONVINCED>' in raw_text:
+            logger.debug("Parser found NOT-CONVINCED signal.", extra={"msg_type": "main debate", "sender": "moderator"})
+            # Log the conviction result to memories
+            return False
+        
+        else:
+            logger.error(f"Conviction moderator returned unexpected response '{conviction_result}'. Defaulting to NOT-CONVINCED.", extra={"msg_type": "main debate", "sender": "moderator"})
+            return False
     #TODO: make the memory incapsuled in agents
     def _append_moderation_results_to_memories(self, persuader_memory: MemoryInterface, debater_memory: MemoryInterface, moderator_logs: List[Dict[str, Any]]):
         """Log the results of moderation checks."""
@@ -253,17 +290,18 @@ class DebateOrchestrator:
         debater_tokens = self.debater.get_total_token_usage()["total_tokens"]
         term_mod_tokens = self.moderator_terminator.get_total_token_usage()["total_tokens"]
         topic_mod_tokens = self.moderator_topic.get_total_token_usage()["total_tokens"]
+        conviction_mod_tokens = self.moderator_conviction.get_total_token_usage()["total_tokens"]
         
         # Helper tokens are tracked separately
         helper_tokens = self.persuader.helper_token_used if self.persuader.use_helper_feedback else 0
         
-        total_tokens = persuader_tokens + debater_tokens + term_mod_tokens + topic_mod_tokens + helper_tokens
+        total_tokens = persuader_tokens + debater_tokens + term_mod_tokens + topic_mod_tokens + conviction_mod_tokens + helper_tokens
         
         # Log the token counts
         logger.info(
             f"Token Estimates: Persuader={persuader_tokens}, "
             f"Debater={debater_tokens}, "
-            f"Moderator={term_mod_tokens + topic_mod_tokens}, "
+            f"Moderator={term_mod_tokens + topic_mod_tokens + conviction_mod_tokens}, "
             f"Helper={helper_tokens}, "
             f"Total={total_tokens}"
         )

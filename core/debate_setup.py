@@ -121,7 +121,7 @@ class DebateInstanceSetup:
         
         # Moderator System Prompts 
         self.mod_sys_instructions = {}
-        for mod_key, path_key in [('terminator', 'prompt_terminator_path'), ('topic_checker', 'prompt_topic_checker_path')]:
+        for mod_key, path_key in [('terminator', 'prompt_terminator_path'), ('topic_checker', 'prompt_topic_checker_path'), ('conviction', 'prompt_conviction_path')]:
             path = m_config[path_key]; self.mod_sys_instructions[mod_key] = self._load_and_populate_prompt(path, self.debate_details)
             
         # Helper System Prompt (if needed)
@@ -173,6 +173,7 @@ class DebateInstanceSetup:
         self.d_llm_client = self._create_llm(d_provider_config, self.d_sys_instruction)
         self.mod_term_client = self._create_llm(m_provider_config, self.mod_sys_instructions['terminator'])
         self.mod_topic_client = self._create_llm(m_provider_config, self.mod_sys_instructions['topic_checker'])
+        self.mod_conviction_client = self._create_llm(m_provider_config, self.mod_sys_instructions['conviction'])
         self.p_helper_llm_client = None
         if h_provider_config: 
              self.p_helper_llm_client = self._create_llm(h_provider_config, self.helper_sys_instruction)
@@ -231,4 +232,5 @@ class DebateInstanceSetup:
         self.debater = DebaterAgent(llm_client=self.d_llm_client, memory=self.debater_memory, variables=self.debate_details, model_config=d_model_cfg, prompt_wrapper_path=d_config.get('prompt_wrapper_path'))
         self.moderator_terminator = ModeratorAgent(llm_client=self.mod_term_client, agent_name="ModeratorTerminator", model_config=mod_model_cfg, variables=self.debate_details)
         self.moderator_topic_checker = ModeratorAgent(llm_client=self.mod_topic_client, agent_name="ModeratorTopicChecker", model_config=mod_model_cfg, variables=self.debate_details)
+        self.moderator_conviction = ModeratorAgent(llm_client=self.mod_conviction_client, agent_name="ModeratorConviction", model_config=mod_model_cfg, variables=self.debate_details)
         logger.debug("Created all agents.") 
