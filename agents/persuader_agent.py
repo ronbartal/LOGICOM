@@ -127,7 +127,7 @@ class PersuaderAgent(BaseAgent):
         logger.info("Persuador added own response to memory", 
                   extra={"msg_type": "memory_operation", "operation": "write", "agent_name": self.agent_name})
         
-        logger.info(f"Persuader response to debater {final_response_to_send}", 
+        logger.info(f"Persuader response to debater: {final_response_to_send}", 
                        extra={"msg_type": "main debate", "agent_name": self.agent_name, "sender": self.agent_name, "receiver": "debater"})
         # Return only the final response string
         return final_response_to_send
@@ -152,13 +152,23 @@ class PersuaderAgent(BaseAgent):
         final_user_instruction = self._helper_template_content.format(**helper_vars)
         helper_prompt_history = [{"role": "user", "content": final_user_instruction}]
 
+        # Log the helper input for debugging
+        logger.debug(f"Helper input - Original response: {persuader_response}", 
+                   extra={"msg_type": "helper_operation", "agent_name": self.agent_name, "operation": "input"})
+        # logger.debug(f"Helper input - Formatted instruction: {final_user_instruction[:500]}...", 
+        #            extra={"msg_type": "helper_operation", "agent_name": self.agent_name, "operation": "input"})
+
         # Estimate helper prompt tokens
         prompt_tokens = calculate_chat_tokens(helper_prompt_history)
         
         # Call helper LLM
         raw_feedback = self.helper_llm_client.generate(helper_prompt_history, **self.helper_model_config)
+        
+        # # Log the raw helper output for debugging
+        # logger.debug(f"Helper raw output: {raw_feedback}", 
+        #            extra={"msg_type": "helper_operation", "agent_name": self.agent_name, "operation": "raw_output"})
         logger.debug("Helper generated response", 
-                   extra={"msg_type": "llm_operation", "agent_name": self.agent_name})
+                   extra={"msg_type": "helper_operation", "agent_name": self.agent_name, "operation": "generation"})
 
         # Estimate helper completion tokens using token_utils
         completion_tokens = calculate_string_tokens(raw_feedback)
@@ -192,8 +202,11 @@ class PersuaderAgent(BaseAgent):
         refined_response = str(refinement_dict["response"])
         feedback_tag_str = str(refinement_dict["feedback_tag"])
 
-        logger.debug(f"Helper refined response", 
-                   extra={"msg_type": "helper_operation", "agent_name": self.agent_name, "feedback_tag": feedback_tag_str}) # TODO:: check_log
+        # Log the final parsed result
+        logger.debug(f"Helper parsed JSON - Response: {refined_response}", 
+                   extra={"msg_type": "helper_operation", "agent_name": self.agent_name, "operation": "parsed_response", "feedback_tag": feedback_tag_str})
+        logger.debug(f"Helper parsed JSON - Feedback tag: {feedback_tag_str}", 
+                   extra={"msg_type": "helper_operation", "agent_name": self.agent_name, "operation": "parsed_feedback_tag", "feedback_tag": feedback_tag_str})
         
         # Return only the refined response and feedback tag
         return refined_response
