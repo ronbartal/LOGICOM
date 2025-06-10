@@ -33,3 +33,6 @@ API_keys
 # Log files and outputs
 *.log
 debates/
+debates_test/
+debates_palm_experiments/
+debates_gpt4_experiments/
