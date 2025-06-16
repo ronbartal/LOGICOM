@@ -90,4 +90,12 @@ def setup_logging():
         logging.basicConfig(level=logging.INFO)
         logger.warning(f"Logging config not found at {config_path}. Using basic configuration.")
 
+    # --- Suppress noisy logs from underlying libraries ---
+    logging.getLogger("httpx").setLevel(logging.WARNING)
+    logging.getLogger("httpcore").setLevel(logging.WARNING)
+    logging.getLogger("openai").setLevel(logging.WARNING)
+    logging.getLogger("google.api_core").setLevel(logging.WARNING)
+    # --------------------------------
+
+
 

@@ -12,9 +12,9 @@ from agents.persuader_agent import PersuaderAgent
 from agents.debater_agent import DebaterAgent
 from agents.moderator_agent import ModeratorAgent # For type hints
 from core.interfaces import MemoryInterface # For type hinting if needed
+from utils.log_debate import save_debate_log
 from core.interfaces import INTERNAL_USER_ROLE, INTERNAL_AI_ROLE # Import standard roles
-from utils.log_main import logger # Import custom logger
-
+from utils.log_main import logger
 
 
 
@@ -23,54 +23,55 @@ from utils.log_main import logger # Import custom logger
 class DebateOrchestrator:
     """Orchestrates the debate, managing agent turns and moderation checks."""
 
-    # Define colors (assuming Persuader=BLUE, Debater=GREEN)
     PERSUADER_COLOR = Fore.BLUE
     DEBATER_COLOR = Fore.GREEN
     ROUND_COLOR = Fore.RED
-    MODERATOR_COLOR = Fore.YELLOW # For moderator actions
+    MODERATOR_COLOR = Fore.YELLOW
     ERROR_COLOR = Fore.RED + Style.BRIGHT
-    RESET_ALL = Style.RESET_ALL # Use this if init(autoreset=True) is not used
+    RESET_ALL = Style.RESET_ALL
 
     def __init__(self,
+                 # Agents
                  persuader: PersuaderAgent,
                  debater: DebaterAgent,
-                 # Individual moderator agents
                  moderator_terminator: ModeratorAgent,
                  moderator_topic_checker: ModeratorAgent,
                  moderator_conviction: ModeratorAgent,
                  # Settings
-                 max_rounds: int):
+                 max_rounds: int,
+                 turn_delay_seconds: float,
+                 logger_instance: logging.Logger | None = None):
         self.persuader = persuader
         self.debater = debater
         self.moderator_terminator = moderator_terminator
         self.moderator_topic = moderator_topic_checker
         self.moderator_conviction = moderator_conviction
-
+        self.turn_delay_seconds = turn_delay_seconds
         self.max_rounds = max_rounds
 
         self.log_handlers = {} # Dict to store loggers for different formats
 
     
 # The main loop of the debate
-    def run_debate(self, topic_id: str, claim: str, log_config: Dict[str, Any], helper_type_name: str, chat_id: str) -> Dict[str, Any]:
+    def run_debate(self, topic_id: str, claim: str, log_config: Dict[str, Any], helper_type: str, chat_id: str) -> Dict[str, Any]:
         """
         Runs a single debate for the given topic.
 
         Args:
-            topic_id: Identifier for the debate topic.
-            claim: The claim text to debate.
+            topic_id: Identifier for the topic being debated.
+            claim: The text of the claim.
             log_config: Dictionary with logging parameters ('log_base_path', 'log_formats', etc.).
-            helper_type_name: Name identifying (for logging).
+            helper_type: The type of helper used (for logging).
             chat_id: Unique identifier for this chat (required).
         """
         # Initialize debate
-        self._initialize_debate(topic_id, helper_type_name, chat_id)
+        self._initialize_debate(topic_id, helper_type, chat_id)
         
         # Initialize state
         keep_talking = True
         round_number = 0
-        final_result_status = None  # Will be set based on actual outcome
-        finish_reason = None  # Will be set based on actual outcome
+        final_result_status = None
+        finish_reason = None
         current_persuader_response = ""
         debater_response = ""
 
@@ -112,10 +113,10 @@ class DebateOrchestrator:
             final_result_status=final_result_status,
             finish_reason=finish_reason,
             log_config=log_config,
-            helper_type_name=helper_type_name
+            helper_type=helper_type
         )
 
-    def _initialize_debate(self, topic_id: str, helper_type_name: str, chat_id: str = None) -> str:
+    def _initialize_debate(self, topic_id: str, helper_type: str, chat_id: str = None) -> str:
         """Initialize a new debate session."""
         # Reset all agents
         self.persuader.reset()
@@ -123,7 +124,7 @@ class DebateOrchestrator:
         self.moderator_terminator.reset()
         self.moderator_topic.reset()
         self.moderator_conviction.reset()
-
+        
         # Log initial setup 
         logger.debug(f"Starting Debate, Topic: {topic_id}, Chat ID: {chat_id}", 
                    extra={"msg_type": "system", "topic_id": topic_id, "chat_id": chat_id})
@@ -141,6 +142,11 @@ class DebateOrchestrator:
 
     def _run_persuader_turn(self, previous_debater_response: str) -> str:
         """Run the persuader's turn in the debate."""
+        # --- Add Turn Delay ---
+        if self.turn_delay_seconds > 0:
+            logger.info(f"Waiting for {self.turn_delay_seconds:.2f} seconds before debater's turn.")
+            time.sleep(self.turn_delay_seconds)
+        # ----------------------
 
         # First round has no opponent message
         opponent_message = previous_debater_response if previous_debater_response else None
@@ -152,6 +158,11 @@ class DebateOrchestrator:
 
     def _run_debater_turn(self, persuader_message: str) -> str:
         """Run the debater's turn in the debate."""
+        # --- Add Turn Delay ---
+        if self.turn_delay_seconds > 0:
+            logger.info(f"Waiting for {self.turn_delay_seconds:.2f} seconds before debater's turn.")
+            time.sleep(self.turn_delay_seconds)
+        # ----------------------
 
         debater_response = self.debater.call(persuader_message)
         #logger.debug(f"Debater: {debater_response}", extra={"msg_type": "debate_verbose", "speaker": "debater"})
@@ -191,18 +202,16 @@ class DebateOrchestrator:
             "raw_response": termination_result
         })
         raw_text = termination_result.strip().upper()
-        if '<TERMINATE>' in raw_text:
+        if 'TERMINATE' in raw_text:
             logger.debug("Parser found TERMINATE signal." , extra={"msg_type": "main debate", "sender": "moderator"})
-          #  logger.debug(f"Moderator Termination Check: TERMINATE.", extra={"msg_type": "main debate", "speaker": "moderator"})
             return False
         
         elif '<KEEP-TALKING>' in raw_text:
             logger.debug("Parser found KEEP-TALKING signal." , extra={"msg_type": "main debate", "sender": "moderator"})
-            #logger.debug(f"Moderator Termination Check: Continue debate.", extra={"msg_type": "main debate", "speaker": "moderator"})
             return True
-        
+                
         else: #TODO: Decide if this should be a warning or an error
-            logger.warning(f"Termination moderator returned unexpected response '{termination_result}'. Defaulting to KEEP-TALKING." , extra={"msg_type": "main debate", "sender": "moderator"})
+            logger.error(f"Termination moderator returned unexpected response '{termination_result}'. Defaulting to KEEP-TALKING." , extra={"msg_type": "main debate", "sender": "moderator"})
             return True
 
 
@@ -262,7 +271,7 @@ class DebateOrchestrator:
 
     def _finalize_debate(self, topic_id: str, chat_id: str, claim: str, round_number: int, 
                         final_result_status: str, finish_reason: str, log_config: Dict[str, Any], 
-                        helper_type_name: str) -> Dict[str, Any]:
+                        helper_type: str) -> Dict[str, Any]:
         """Finalize the debate by saving logs and preparing results."""
         # Calculate token usage
         token_usage = self._calculate_token_usage()
@@ -318,13 +327,3 @@ class DebateOrchestrator:
             return full_history[-count:]
         return full_history
 
-
-    # def reset_orchestrator(self):
-
-
-
-    # --- Moderator Response Parsing Methods --- 
-
-
-    # --- Removed _parse_moderator_tag_check --- 
-    # def _parse_moderator_tag_check(self, raw_response: str) -> bool:

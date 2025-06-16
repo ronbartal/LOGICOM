@@ -16,7 +16,7 @@ class BaseAgent(AgentInterface):
                  memory: MemoryInterface | None,
                  agent_name: str = "BaseAgent",
                  model_config: Optional[Dict[str, Any]] = None,
-                 prompt_wrapper_path: Optional[str] = None):
+                 prompt_wrapper: Optional[str] = None):
         """
         Initializes the BaseAgent.
 
@@ -25,14 +25,13 @@ class BaseAgent(AgentInterface):
             memory: An object implementing the MemoryInterface (or None).
             agent_name: A descriptive name for the agent instance.
             model_config: Default configuration for the LLM (e.g., temperature).
-            prompt_wrapper_path: Optional path to a prompt wrapper template file.
+            prompt_wrapper: Optional string template for the prompt wrapper.
         """
         self.llm_client = llm_client
         self.memory = memory
         self.agent_name = agent_name
         self.model_config = model_config or {}
-        self.prompt_wrapper_path = prompt_wrapper_path 
-        self._prompt_wrapper_template: Optional[str] = None
+        self._prompt_wrapper_template: Optional[str] = prompt_wrapper
         self.token_used: int = 0
         self.prompt_tokens_used: int = 0
         self.completion_tokens_used: int = 0
@@ -43,7 +42,7 @@ class BaseAgent(AgentInterface):
                     template_content = f.read()
             self._prompt_wrapper_template = template_content
             if template_content:
-                logger.debug(f"Successfully loaded prompt wrapper template for {self.agent_name} from {self.prompt_wrapper_path}.")
+                logger.info(f"Successfully loaded prompt wrapper template for {self.agent_name} from {self.prompt_wrapper_path}.")
             else:
                 logger.error(f"Prompt wrapper file is empty: {self.prompt_wrapper_path}")
 
@@ -140,7 +139,7 @@ class BaseAgent(AgentInterface):
         if not self._prompt_wrapper_template or not prompt:
             return prompt 
             
-        # Assume wrapper template uses {LAST_OPPONENT_MESSAGE}
+        # Assume wrapper template uses <LAST_OPPONENT_MESSAGE>
         wrapper_template = self._prompt_wrapper_template 
                 
         # Find the content of the last message (assumed opponent/user)
@@ -151,7 +150,7 @@ class BaseAgent(AgentInterface):
                 raise ValueError("Last message in the prompt isn't a 'user' message. Could not apply the prompt wrapper.")
 
         # Format the wrapper template with the last opponent message content
-        wrapped_content = wrapper_template.replace("{LAST_OPPONENT_MESSAGE}", last_opponent_message_content)
+        wrapped_content = wrapper_template.replace("<LAST_OPPONENT_MESSAGE>", last_opponent_message_content)
 
         # Create the new final user message dictionary
         final_user_message = {"role": "user", "content": wrapped_content}
