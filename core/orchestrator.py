@@ -128,7 +128,7 @@ class DebateOrchestrator:
         # Log initial setup 
         logger.debug(f"Starting Debate, Topic: {topic_id}, Chat ID: {chat_id}", 
                    extra={"msg_type": "system", "topic_id": topic_id, "chat_id": chat_id})
-        logger.debug(f"Config: {helper_type_name}", extra={"msg_type": "system"})
+        logger.debug(f"Config: {helper_type}", extra={"msg_type": "system"})
         logger.debug(f"Persuader: {self.persuader.agent_name}, LLM: {self.persuader.llm_client.__class__.__name__}", 
                    extra={"msg_type": "system"})
         logger.debug(f"Debater: {self.debater.agent_name}, LLM: {self.debater.llm_client.__class__.__name__}", 
@@ -279,7 +279,7 @@ class DebateOrchestrator:
         # Log debate end with all metadata needed for HTML/XLSX generation, including token usage
         logger.info(f"Debate ended with result: {final_result_status} !!!!", 
                    extra={"msg_type": "main debate", "sender": "orchestrator", "topic_id": topic_id, 
-                          "chat_id": chat_id, "helper_type": helper_type_name, "result": final_result_status, 
+                          "chat_id": chat_id, "helper_type": helper_type, "result": final_result_status, 
                           "rounds": round_number, "finish_reason": finish_reason, "claim": claim,
                           "token_usage": token_usage})
 

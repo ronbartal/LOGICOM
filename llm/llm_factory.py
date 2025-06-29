@@ -1,8 +1,7 @@
-import logging
+from utils.log_main import logger
 from typing import Optional
 import torch
 from transformers import AutoModelForCausalLM, AutoTokenizer, BitsAndBytesConfig
-import accelerate
 import gc
 # Direct import from project structure
 from core.interfaces import LLMInterface

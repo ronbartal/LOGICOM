@@ -36,15 +36,11 @@ class BaseAgent(AgentInterface):
         self.prompt_tokens_used: int = 0
         self.completion_tokens_used: int = 0
 
-        # Load prompt wrapper template content during init
-        if self.prompt_wrapper_path:
-            with open(self.prompt_wrapper_path, 'r', encoding='utf-8') as f:
-                    template_content = f.read()
-            self._prompt_wrapper_template = template_content
-            if template_content:
-                logger.info(f"Successfully loaded prompt wrapper template for {self.agent_name} from {self.prompt_wrapper_path}.")
-            else:
-                logger.error(f"Prompt wrapper file is empty: {self.prompt_wrapper_path}")
+        # Log if prompt wrapper template was provided
+        if self._prompt_wrapper_template:
+            logger.debug(f"Prompt wrapper template provided for {self.agent_name}")
+        else:
+            logger.debug(f"No prompt wrapper template for {self.agent_name}")
 
     @abstractmethod
     def call(self, input_data: Any) -> Any:

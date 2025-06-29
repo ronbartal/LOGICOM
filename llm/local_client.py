@@ -1,4 +1,4 @@
-import logging
+from utils.log_main import logger
 from typing import List, Dict, Any, Optional
 import torch
 from transformers import PreTrainedTokenizerBase, PreTrainedModel

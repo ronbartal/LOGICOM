@@ -4,7 +4,6 @@ import pandas as pd
 import uuid
 from tqdm import tqdm
 from typing import Dict, Any, Optional, Tuple, Union, List
-import logging
 import json
 import logging.config
 
@@ -14,7 +13,7 @@ from utils.set_api_keys import set_environment_variables_from_file, API_KEYS_PAT
 from config.loader import load_app_config
 from core.orchestrator import DebateOrchestrator
 from core.debate_setup import DebateInstanceSetup
-from utils.utils import create_debate_directory, save_debate_logs, save_debate_in_excel
+from utils.utils import create_debate_directory, save_debate_logs, save_debate_in_excel # Why the fuck isnt this used
 
 # Use colorama for terminal colors
 from colorama import init
@@ -118,6 +117,16 @@ def _run_single_debate(index: int,
 
         # Log start using extracted topic_id
         logger.info(f"\n===== Preparing Claim Index: {index}, Topic ID: {topic_id} ====", extra={"msg_type": "system"})
+        
+        # Generate chat ID early
+        chat_id = str(uuid.uuid4())
+        if not chat_id:
+            logger.error(f"Failed to generate a valid chat_id for topic {topic_id}", extra={"msg_type": "system"})
+            raise ValueError("Failed to generate a valid chat_id")
+        
+        # Create directory structure for logs
+        chat_dir = create_debate_directory(topic_id, chat_id, helper_type)
+        logger.info(f"Created debate chat directory: {chat_dir}", extra={"msg_type": "system"})
 
         # Instantiate setup class for this claim
         setup = DebateInstanceSetup(
@@ -132,6 +141,7 @@ def _run_single_debate(index: int,
             debater=setup.debater,
             moderator_terminator=setup.moderator_terminator,
             moderator_topic_checker=setup.moderator_topic_checker,
+            moderator_conviction=setup.moderator_conviction,
             max_rounds=int(debate_settings['max_rounds']),
             turn_delay_seconds=float(debate_settings['turn_delay_seconds'])
         )
@@ -141,8 +151,47 @@ def _run_single_debate(index: int,
             topic_id=topic_id, 
             claim=claim_text, 
             log_config=debate_settings,
-            helper_type=helper_type
+            helper_type=helper_type,
+            chat_id=chat_id
         )
+        
+        # --- Post-Debate Processing ---
+        # Save all log files to the debate directory
+        save_success = save_debate_logs(chat_dir, remove_originals=True)
+        if save_success:
+            logger.info(f"Successfully saved logs to {chat_dir}", extra={"msg_type": "system"})
+        else:
+            logger.warning(f"Failed to save logs to {chat_dir}", extra={"msg_type": "system"})
+        
+        # Convert result to integer for Excel (1=convinced, 0=not convinced, 2=other)
+        result_status = run_result_data.get('result', 'Unknown')
+        if result_status == "Convinced":
+            result_code = 1
+        elif result_status == "Not convinced":
+            result_code = 0
+        else:
+            result_code = 2  # For "Inconclusive", errors, etc.
+        
+        # Prepare claim data as dictionary for Excel function
+        claim_data_dict = {
+            'claim': claim_text,
+            'topic_id': topic_id,
+            'index': index
+        }
+        
+        # Save debate summary to Excel
+        excel_success = save_debate_in_excel(
+            topic_id=topic_id,
+            claim_data=claim_data_dict,
+            helper_type=helper_type,
+            chat_id=chat_id,
+            result=result_code
+        )
+        if excel_success:
+            logger.info(f"Successfully saved debate summary to Excel", extra={"msg_type": "system"})
+        else:
+            logger.warning(f"Failed to save debate summary to Excel", extra={"msg_type": "system"})
+        
         # Combine orchestrator results with status/IDs
         run_result = {
              "topic_id": topic_id,
@@ -194,13 +243,14 @@ def main():
 
     try:
         # Load configuration directly using the loader
-        logger.info(f"Loading configuration for run: '{args.config_run_name}'...", extra={"msg_type": "system"})
+        
         debate_settings, agent_config, prompt_templates = load_app_config(
             settings_path=args.settings_path,
             models_path=args.models_path,
-            run_config_name=args.config_run_name
+            run_config_name=args.helper_type
         )
         logger.info("Configuration loaded successfully.", extra={"msg_type": "system"})
+        logger.info(f"Loading configuration for run: '{args.helper_type}'...", extra={"msg_type": "system"})
 
         # Load claims data
         claims_file_path = debate_settings['claims_file_path']
@@ -216,6 +266,11 @@ def main():
         else:
             logger.info(f"Running for all {num_claims} claims.", extra={"msg_type": "system"})
             claim_indices_to_run = list(range(num_claims))
+
+        # Override max_rounds if provided via command line
+        if args.max_rounds is not None:
+            logger.info(f"Overriding max_rounds from {debate_settings['max_rounds']} to {args.max_rounds}", extra={"msg_type": "system"})
+            debate_settings['max_rounds'] = args.max_rounds
 
         # Get helper type from the resolved config
         helper_type = agent_config['helper_type']

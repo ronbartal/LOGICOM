@@ -1,5 +1,5 @@
 import logging
-from typing import Dict, Any, Optional, tuple
+from typing import Dict, Any, Optional, Tuple
 import pandas as pd
 import os 
 
@@ -25,7 +25,7 @@ class DebateInstanceSetup:
                  debate_settings: Dict[str, Any],
                  formatted_prompts: Dict[str, str]):
         
-        logger.debug(f"Setting up instance for Topic ID: {self.topic_id}")
+        logger.debug("Setting up new debate instance...")
         self.agents_configuration = agents_configuration
         self.debate_settings = debate_settings
         self.prompts = formatted_prompts
@@ -92,7 +92,9 @@ class DebateInstanceSetup:
         self.p_helper_llm_client = None
         # Create helper client only if use_helper is True and config was resolved
         if h_provider_config: 
-             logger.info(f"Attempting to create helper LLM client using config: {h_provider_config['model_name_or_path']}...")
+             # Get model identifier for logging (different models use different keys)
+             model_id = h_provider_config.get('model_name_or_path', h_provider_config.get('model_name', 'Unknown'))
+             logger.info(f"Attempting to create helper LLM client using config: {model_id}...")
              # Retrieve the correct system prompt for the determined helper type
              helper_system_instr, _ = self._determine_helper_prompts(helper_type)
              if use_helper and helper_system_instr is None:
