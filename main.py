@@ -88,7 +88,7 @@ def format_prompts_for_claim(debate_settings: Dict[str, Any],
 # --- Argument Parsing --- 
 def define_arguments() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Run AI Debates with Reworked Architecture")
-    parser.add_argument("--helper_type", default="Default_NoHelper", 
+    parser.add_argument("--helper_type", default="Default_No_Helper", 
                         help="Name of the helper type configuration in settings.yaml to use.")
     parser.add_argument("--claim_index", type=int, default=None, 
                         help="Index of the specific claim in the claims_file to run (0-based). Runs all if not specified.")

@@ -52,10 +52,7 @@ agent_configurations:
     persuader:
       # Reference to LLM config in models.yaml
       model_name: gpt35_turbo
-      model_config_override:
-        # temperature: 1.0 
-        # presence_penalty: 0.0
-        # frequency_penalty: 0.0
+      model_config_override: {}
 
       # Helper Feedback Config 
       use_helper_feedback: false 
@@ -64,10 +61,7 @@ agent_configurations:
 
     debater:
       model_name: gpt35_turbo 
-      model_config_override:
-        # temperature: 1.0 
-        # presence_penalty: 0.0
-        # frequency_penalty: 0.0
+      model_config_override: {}
 
     moderator:
       model_name: gemini_15_flash_8b 

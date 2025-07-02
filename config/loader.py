@@ -80,7 +80,7 @@ def _resolve_models_for_config(target_agent_config: Dict[str, Any],
 
 def load_app_config(settings_path: str = DEFAULT_SETTINGS_PATH, 
                       models_path: str = DEFAULT_MODELS_PATH,
-                      run_config_name: str = "Default_NoHelper") -> Tuple[Dict, Dict, Dict]:
+                      run_config_name: str = "Default_No_Helper") -> Tuple[Dict, Dict, Dict]:
     """
     Loads debate settings, all prompt templates, and the specific agent
     configuration for the run, resolving LLM model details.

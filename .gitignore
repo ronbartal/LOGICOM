@@ -34,3 +34,6 @@ API_keys
 logs/
 *.log
 debates/
+tests/
+
+*.xlsx

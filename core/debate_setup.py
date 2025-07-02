@@ -115,15 +115,16 @@ class DebateInstanceSetup:
 
     def _determine_helper_prompts(self, helper_type: str) -> Tuple[Optional[str], Optional[str]]:
         """Determines the system and wrapper prompt keys based on helper_type."""
-        system_key = None
-        wrapper_key = None
-        if helper_type == HELPER_TYPE_FALLACY:
+        if helper_type == HELPER_TYPE_NONE:
+            # No helper prompts needed
+            return None, None
+        elif helper_type == HELPER_TYPE_FALLACY:
             system_key = "helper_fallacy_system"
             wrapper_key = "helper_fallacy_wrapper"
         elif helper_type == HELPER_TYPE_LOGICAL:
             system_key = "helper_logical_system"
             wrapper_key = "helper_logical_wrapper"
-        elif helper_type != HELPER_TYPE_NONE:
+        else:
             # Handle unknown helper types
             raise ValueError(f"Unknown helper_type '{helper_type}' specified. No helper prompts will be loaded.")
         
