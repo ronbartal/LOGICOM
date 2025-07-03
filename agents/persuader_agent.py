@@ -127,8 +127,6 @@ class PersuaderAgent(BaseAgent):
     def _get_helper_refinement(self, persuader_response: str) -> str: #TODO: Check if more logging needed
         """
         Calls the helper LLM, parses the JSON response, and returns the refined response.
-        Expected JSON format: {"response": "<rewritten_text>", "feedback_tag": "<tag_name>"}.
-        Raises exceptions if parsing/validation fails.
         
         Returns:
             The refined response string
