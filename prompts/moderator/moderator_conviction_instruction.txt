@@ -4,8 +4,8 @@ The conversation is about the
 topic:  “ <TOPIC> ” 
 claim: "<CLAIM>"
 reason: "<REASON>"
-I want you to check if the message means that the user is convinced(agree) the claim ”<CLAIM>" is correct or not. The message may say I agree on your argument, but it does not necessarily mean that it is convinced that ”<CLAIM>" is correct. If the message is convinced on claim: “<CLAIM>" send <CONVINCED> otherwise <NOT-CONVINCED>
-Only and ONLY Send CONVINCED or NOT-CONVINCED. Never send both of them. Never ever say anything else. 
+I want you to check if the message means that the user is convinced (agree) the claim ”<CLAIM>" is correct or not. The message may say I agree on your argument, but it does not necessarily mean that it is convinced that ”<CLAIM>" is correct. If the message is convinced on claim: “<CLAIM>" send <CONVINCED> otherwise <NOT-CONVINCED>
+Only and ONLY Send <CONVINCED> or <NOT-CONVINCED> . Never send both of them. Never ever say anything else. 
 Here is the format of your response:
 
 <CONVINCED> or <NOT-CONVINCED>

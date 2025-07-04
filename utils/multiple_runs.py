@@ -20,6 +20,21 @@ import os
 import shutil
 from datetime import datetime
 import zipfile
+import signal
+
+# Global flag for graceful shutdown
+interrupt_requested = False
+
+def signal_handler(signum, frame):
+    """Handle interrupt signal (Ctrl+C) gracefully"""
+    global interrupt_requested
+    if not interrupt_requested:
+        print("\n⚠️  Interrupt received! Will stop after current debate finishes...")
+        print("   Press Ctrl+C again to force quit immediately.")
+        interrupt_requested = True
+    else:
+        print("\n🛑 Force quit requested!")
+        sys.exit(1)
 
 def load_config(settings_path: str = "./config/settings.yaml") -> dict:
     """Load settings to get available helper types"""
@@ -102,6 +117,9 @@ def run_single_debate(helper_type: str, claim_index: Optional[int] = None,
         return False
 
 def main():
+    # Register signal handler for graceful shutdown
+    signal.signal(signal.SIGINT, signal_handler)
+    
     parser = argparse.ArgumentParser(description="Run multiple LOGICOM debates with different configurations")
     
     parser.add_argument("--helper_types", nargs="+", 
@@ -151,18 +169,18 @@ def main():
         print(f"Available helpers: {available_helpers}")
         return
     
-    # Prepare runs
     runs = []
     total_runs = 0
     
-    for helper_type in helper_types:
-        if args.sequential and args.claim_indexes:
-            # Run specific claim indexes sequentially
-            for claim_index in args.claim_indexes:
+    if args.sequential and args.claim_indexes:
+        # Run by claim first, then by helper type
+        for claim_index in args.claim_indexes:
+            for helper_type in helper_types:
                 runs.append((helper_type, claim_index))
                 total_runs += 1
-        else:
-            # Run all claims for this helper type (or no specific claims)
+    else:
+        # Run all claims for each helper type (or no specific claims)
+        for helper_type in helper_types:
             claim_index = args.claim_indexes[0] if args.claim_indexes and len(args.claim_indexes) == 1 else None
             runs.append((helper_type, claim_index))
             total_runs += 1
@@ -180,6 +198,11 @@ def main():
     start_time = time.time()
     
     for i, (helper_type, claim_index) in enumerate(runs, 1):
+        # Check for interrupt before starting next debate
+        if interrupt_requested:
+            print(f"\n🛑 Stopping execution after {i-1} completed runs due to interrupt.")
+            break
+            
         print(f"\n[{i}/{total_runs}] Running {helper_type}" + (f" claim {claim_index}" if claim_index is not None else " all claims"))
         
         success = run_single_debate(
@@ -196,10 +219,15 @@ def main():
     
     # Summary
     elapsed_time = time.time() - start_time
+    completed_runs = successful_runs + failed_runs
+    
     print(f"\n" + "="*50)
     print(f"SUMMARY")
     print(f"="*50)
-    print(f"Total runs: {total_runs}")
+    print(f"Planned runs: {total_runs}")
+    print(f"Completed runs: {completed_runs}")
+    if interrupt_requested:
+        print(f"⚠️  Run interrupted by user ({total_runs - completed_runs} runs skipped)")
     print(f"Successful: {successful_runs}")
     print(f"Failed: {failed_runs}")
     print(f"Time elapsed: {elapsed_time:.1f} seconds")
@@ -216,6 +244,16 @@ def main():
     else:
         print(f"✗ Excel file not found: {excel_file}")
     
+    # Save copy of settings.yaml for reproducibility
+    if os.path.exists(args.settings_path):
+        dest_settings = os.path.join(results_dir, "settings.yaml")
+        try:
+            shutil.copy2(args.settings_path, dest_settings)
+            print(f"✓ Saved settings copy to: {dest_settings}")
+        except Exception as e:
+            print(f"✗ Failed to copy settings file: {e}")
+    else:
+        print(f"✗ Settings file not found: {args.settings_path}")
     # Create ZIP archive of prompts folder (for reproducibility)
     prompts_folder = "prompts"
     if os.path.exists(prompts_folder):

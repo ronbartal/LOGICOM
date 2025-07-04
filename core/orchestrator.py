@@ -195,7 +195,7 @@ class DebateOrchestrator:
             logger.debug("Parser found TERMINATE signal." , extra={"msg_type": "main debate", "sender": "moderator"})
             return False
         
-        elif '<KEEP-TALKING>' in raw_text:
+        elif 'KEEP-TALKING' in raw_text:
             logger.debug("Parser found KEEP-TALKING signal." , extra={"msg_type": "main debate", "sender": "moderator"})
             return True
                 
@@ -215,9 +215,9 @@ class DebateOrchestrator:
         })
         raw_text = topic_result.strip().upper()
         
-        if '<ON-TOPIC>' in raw_text:
+        if 'ON-TOPIC' in raw_text:
             return True
-        elif '<OFF-TOPIC>' in raw_text:
+        elif 'OFF-TOPIC' in raw_text:
             return False
         else: #TODO: Decide if this should be a warning or an error
             logger.warning(f"Topic check response format unclear: {topic_result}. Defaulting to on-topic." , extra={"msg_type": "main debate", "sender": "moderator"})
@@ -237,12 +237,12 @@ class DebateOrchestrator:
         
         raw_text = conviction_result.strip().upper()
         
-        if '<CONVINCED>' in raw_text:
+        if 'CONVINCED' in raw_text and 'NOT-CONVINCED' not in raw_text:
             logger.debug("Parser found CONVINCED signal.", extra={"msg_type": "main debate", "sender": "moderator"})
             # Log the conviction result to memories
             return True
         
-        elif '<NOT-CONVINCED>' in raw_text:
+        elif 'NOT-CONVINCED' in raw_text:
             logger.debug("Parser found NOT-CONVINCED signal.", extra={"msg_type": "main debate", "sender": "moderator"})
             # Log the conviction result to memories
             return False
