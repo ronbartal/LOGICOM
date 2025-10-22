@@ -98,14 +98,31 @@ class GeminiClient(LLMInterface):
         # Log request details at DEBUG level
         logger.debug("Gemini API Request", extra={"msg_type": "API_request", "model": self.model_name})
         
-        # Call generate_content using the pre-configured self.model
-        response = self.model.generate_content(
-            gemini_prompt,
-            generation_config=genai.types.GenerationConfig(**generation_config) if generation_config else None,
-            safety_settings=safety_settings
-        )
-        #  Log the raw response at DEBUG level
-        logger.debug("Gemini API Response", extra={"msg_type": "API_response", "model": self.model_name})
+        try:
+            # Call generate_content using the pre-configured self.model
+            response = self.model.generate_content(
+                gemini_prompt,
+                generation_config=genai.types.GenerationConfig(**generation_config) if generation_config else None,
+                safety_settings=safety_settings
+            )
+            #  Log the raw response at DEBUG level
+            logger.debug("Gemini API Response", extra={"msg_type": "API_response", "model": self.model_name})
 
-        return response.text.strip()
+            return response.text.strip()
+        
+        except google_exceptions.ResourceExhausted as e:
+            logger.error(f"Gemini Rate Limit Error (429): {e}", extra={"msg_type": "system", "error_type": "rate_limit"})
+            raise
+        except google_exceptions.InvalidArgument as e:
+            logger.error(f"Gemini Invalid Argument Error: {e}", extra={"msg_type": "system", "error_type": "invalid_argument"})
+            raise
+        except google_exceptions.PermissionDenied as e:
+            logger.error(f"Gemini Permission Denied (Auth Error): {e}", extra={"msg_type": "system", "error_type": "auth_error"})
+            raise
+        except google_exceptions.GoogleAPIError as e:
+            logger.error(f"Gemini API Error: {e}", extra={"msg_type": "system", "error_type": "api_error"})
+            raise
+        except Exception as e:
+            logger.error(f"Unexpected Gemini Error: {e}", extra={"msg_type": "system", "error_type": "unknown"})
+            raise
         

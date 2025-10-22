@@ -74,9 +74,26 @@ class OpenAIClient(LLMInterface):
         # Log request details at DEBUG level
         logger.debug("OpenAI API Request", extra={"msg_type": "API_request", "model": model})
 
-        response = self.client.chat.completions.create(**api_params)
+        try:
+            response = self.client.chat.completions.create(**api_params)
+            
+            # Log the raw response at DEBUG level
+            logger.debug("OpenAI API Response", extra={"msg_type": "API_response", "model": model})
+            
+            return response.choices[0].message.content.strip()
         
-        # Log the raw response at DEBUG level
-        logger.debug("OpenAI API Response", extra={"msg_type": "API_response", "model": model})
-        
-        return response.choices[0].message.content.strip()
+        except openai.RateLimitError as e:
+            logger.error(f"OpenAI Rate Limit Error (429): {e}", extra={"msg_type": "system", "error_type": "rate_limit"})
+            raise
+        except openai.APIError as e:
+            logger.error(f"OpenAI API Error: {e}", extra={"msg_type": "system", "error_type": "api_error"})
+            raise
+        except openai.APIConnectionError as e:
+            logger.error(f"OpenAI Connection Error: {e}", extra={"msg_type": "system", "error_type": "connection_error"})
+            raise
+        except openai.AuthenticationError as e:
+            logger.error(f"OpenAI Authentication Error: {e}", extra={"msg_type": "system", "error_type": "auth_error"})
+            raise
+        except Exception as e:
+            logger.error(f"Unexpected OpenAI Error: {e}", extra={"msg_type": "system", "error_type": "unknown"})
+            raise
