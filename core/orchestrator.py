@@ -265,12 +265,15 @@ class DebateOrchestrator:
         # Calculate token usage
         token_usage = self._calculate_token_usage()
         
-        # Log debate end with all metadata needed for HTML/XLSX generation, including token usage
+        # Get feedback tags from persuader's memory
+        feedback_tags = self.persuader.memory.get_feedback_tags()
+        
+        # Log debate end with all metadata needed for HTML/XLSX generation, including token usage and feedback tags
         logger.info(f"Debate ended with result: {final_result_status} !!!!", 
                    extra={"msg_type": "main debate", "sender": "orchestrator", "topic_id": topic_id, 
                           "chat_id": chat_id, "helper_type": helper_type, "result": final_result_status, 
                           "rounds": round_number, "finish_reason": finish_reason, "claim": claim,
-                          "token_usage": token_usage})
+                          "token_usage": token_usage, "feedback_tags": feedback_tags})
 
         # Return just the essential summary information
         return {
@@ -278,7 +281,8 @@ class DebateOrchestrator:
             "result": final_result_status,
             "rounds": round_number,
             "finish_reason": finish_reason, 
-            "total_tokens_estimate": token_usage
+            "total_tokens_estimate": token_usage,
+            "feedback_tags": feedback_tags
         }
     #TODO, make the agents independent of the orchestrator
     def _calculate_token_usage(self) -> int:

@@ -38,7 +38,7 @@ class MyJSONFormatter(logging.Formatter):
         # Add specific extra attributes we care about
         for attr in ["msg_type", "speaker", "receiver", "sender", "round", "topic", 
                     "topic_id", "chat_id", "helper_type", "result", "finish_reason", 
-                    "rounds", "claim", "token_usage"]:
+                    "rounds", "claim", "token_usage", "feedback_tags", "feedback_tag"]:
             if hasattr(record, attr) and attr not in message:
                 message[attr] = getattr(record, attr)
         
