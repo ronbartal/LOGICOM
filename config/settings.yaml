@@ -62,6 +62,10 @@ agent_configurations:
     moderator:
       model_name: gemini_20_flash
       model_config_override: { temperature: 0.5 }
+    
+    moderator_argument_quality:
+      model_name: gemini_20_flash
+      model_config_override: { temperature: 0.5 }
 
   # --- Default with Fallacy Helper Enabled --- 
   Default_Fallacy_Helper:
@@ -83,6 +87,10 @@ agent_configurations:
         temperature: 1.0 
 
     moderator:
+      model_name: gemini_20_flash
+      model_config_override: { temperature: 0.5 }
+    
+    moderator_argument_quality:
       model_name: gemini_20_flash
       model_config_override: { temperature: 0.5 }
 
@@ -108,7 +116,11 @@ agent_configurations:
 
     moderator:
       model_name: gemini_20_flash
-      model_config_override: { temperature: 0.5 } 
+      model_config_override: { temperature: 0.5 }
+    
+    moderator_argument_quality:
+      model_name: gemini_20_flash
+      model_config_override: { temperature: 0.5 }
 
   # --- Example Configuration using Local Gemma --- 
   Local_Gemma_Test:
@@ -122,7 +134,10 @@ agent_configurations:
       model_name: local_gemma_7b_4bit 
 
     moderator:
-      model_name: local_gemma_7b_4bit 
+      model_name: local_gemma_7b_4bit
+    
+    moderator_argument_quality:
+      model_name: local_gemma_7b_4bit
 
   Local_Llama_Test:
     helper_type: Fallacy_Helper
@@ -135,7 +150,10 @@ agent_configurations:
       model_name: local_llama31_8b_4bit 
 
     moderator:
-      model_name: local_llama31_8b_4bit 
+      model_name: local_llama31_8b_4bit
+    
+    moderator_argument_quality:
+      model_name: local_llama31_8b_4bit
 
   # --- Example Configuration using Local Mistral --- 
   Local_Mistral_Test:
@@ -150,6 +168,9 @@ agent_configurations:
 
     moderator:
       model_name: local_mistral_7b_instruct_4bit
+    
+    moderator_argument_quality:
+      model_name: local_mistral_7b_instruct_4bit
 
   # --- Example Configuration using Local DeepSeek Coder --- 
   Local_DeepSeekCoder_Test:
@@ -163,6 +184,9 @@ agent_configurations:
       model_name: local_deepseek_coder_6_7b_4bit
 
     moderator:
+      model_name: local_deepseek_coder_6_7b_4bit
+    
+    moderator_argument_quality:
       model_name: local_deepseek_coder_6_7b_4bit
 
 # End of agent_configurations

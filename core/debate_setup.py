@@ -92,7 +92,11 @@ class DebateInstanceSetup:
         mod_arg_quality_instr = self.prompts.get('moderator_argument_quality')
         if not mod_arg_quality_instr: 
             raise ValueError(f"Formatted prompt for 'moderator_argument_quality' not found. Available prompts: {list(self.prompts.keys())}")
-        self.mod_arg_quality_client = _create_llm_client_func(m_provider_config, mod_arg_quality_instr)
+        mod_arg_quality_config = self.agents_configuration['moderator_argument_quality']
+        if not mod_arg_quality_config: raise ValueError("Configuration for 'moderator_argument_quality' not found.")
+        mod_arg_quality_provider_config = mod_arg_quality_config['_resolved_llm_config']
+        if not mod_arg_quality_provider_config: raise ValueError("Resolved LLM config missing for moderator_argument_quality.")
+        self.mod_arg_quality_client = _create_llm_client_func(mod_arg_quality_provider_config, mod_arg_quality_instr)
 
         self.p_helper_llm_client = None
         # Create helper client only if use_helper is True and config was resolved
@@ -183,9 +187,13 @@ class DebateInstanceSetup:
         d_provider_config = d_config['_resolved_llm_config']
         m_provider_config = m_config['_resolved_llm_config']
         h_provider_config = p_config['_resolved_llm_config_helper'] if use_helper else {}
+        mod_arg_quality_config = self.agents_configuration['moderator_argument_quality']
+        if not mod_arg_quality_config: raise ValueError("Configuration for 'moderator_argument_quality' not found.")
+        mod_arg_quality_provider_config = mod_arg_quality_config['_resolved_llm_config']
+        if not mod_arg_quality_provider_config: raise ValueError("Resolved LLM config missing for moderator_argument_quality.")
 
         # Combine default generation params from model config with agent-specific overrides
-        p_model_cfg = {**p_provider_config.get('default_config', {}), **p_config.get('model_config_override', {})}; d_model_cfg = {**d_provider_config.get('default_config', {}), **d_config.get('model_config_override', {})}; mod_model_cfg = {**m_provider_config.get('default_config', {}), **m_config.get('model_config_override', {})}; p_helper_model_cfg = {}
+        p_model_cfg = {**p_provider_config.get('default_config', {}), **p_config.get('model_config_override', {})}; d_model_cfg = {**d_provider_config.get('default_config', {}), **d_config.get('model_config_override', {})}; mod_model_cfg = {**m_provider_config.get('default_config', {}), **m_config.get('model_config_override', {})}; mod_arg_quality_model_cfg = {**mod_arg_quality_provider_config.get('default_config', {}), **mod_arg_quality_config.get('model_config_override', {})}; p_helper_model_cfg = {}
         if use_helper: p_helper_model_cfg = {**h_provider_config.get('default_config', {}), **p_config.get('helper_model_config_override', {})}
 
         # Retrieve required prompt content from self.prompts using direct access
@@ -210,5 +218,5 @@ class DebateInstanceSetup:
         self.moderator_terminator = ModeratorAgent(llm_client=self.mod_term_client, agent_name="ModeratorTerminator", model_config=mod_model_cfg)
         self.moderator_topic_checker = ModeratorAgent(llm_client=self.mod_topic_client, agent_name="ModeratorTopicChecker", model_config=mod_model_cfg)
         self.moderator_conviction = ModeratorAgent(llm_client=self.mod_conv_client, agent_name="ModeratorConviction", model_config=mod_model_cfg)
-        self.moderator_argument_quality = ModeratorAgent(llm_client=self.mod_arg_quality_client, agent_name="ModeratorArgumentQuality", model_config=mod_model_cfg)
+        self.moderator_argument_quality = ModeratorAgent(llm_client=self.mod_arg_quality_client, agent_name="ModeratorArgumentQuality", model_config=mod_arg_quality_model_cfg)
         logger.info("Created all agents.") 
