@@ -98,6 +98,11 @@ class DebateInstanceSetup:
         if not mod_arg_quality_provider_config: raise ValueError("Resolved LLM config missing for moderator_argument_quality.")
         self.mod_arg_quality_client = _create_llm_client_func(mod_arg_quality_provider_config, mod_arg_quality_instr)
 
+        mod_debate_quality_instr = self.prompts.get('moderator_debate_quality')
+        if not mod_debate_quality_instr: 
+            raise ValueError(f"Formatted prompt for 'moderator_debate_quality' not found. Available prompts: {list(self.prompts.keys())}")
+        self.mod_debate_quality_client = _create_llm_client_func(mod_arg_quality_provider_config, mod_debate_quality_instr)
+
         self.p_helper_llm_client = None
         # Create helper client only if use_helper is True and config was resolved
         if h_provider_config: 
@@ -219,4 +224,5 @@ class DebateInstanceSetup:
         self.moderator_topic_checker = ModeratorAgent(llm_client=self.mod_topic_client, agent_name="ModeratorTopicChecker", model_config=mod_model_cfg)
         self.moderator_conviction = ModeratorAgent(llm_client=self.mod_conv_client, agent_name="ModeratorConviction", model_config=mod_model_cfg)
         self.moderator_argument_quality = ModeratorAgent(llm_client=self.mod_arg_quality_client, agent_name="ModeratorArgumentQuality", model_config=mod_arg_quality_model_cfg)
+        self.moderator_debate_quality = ModeratorAgent(llm_client=self.mod_debate_quality_client, agent_name="ModeratorDebateQuality", model_config=mod_arg_quality_model_cfg)
         logger.info("Created all agents.") 

@@ -45,6 +45,12 @@ llm_models:
     default_config:
       temperature: 1
 
+  gpt5:
+    provider: openai
+    model_name: gpt-5
+    default_config:
+      temperature: 1
+
   # === Google Gemini Models ===
   gemini_15_flash_8b:
     provider: gemini

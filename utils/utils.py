@@ -47,7 +47,8 @@ def create_debate_directory(topic_id, chat_id, helper_type, debates_base_dir="de
 # save_debate_logs function removed - logs are now written directly to the correct location
 
 def save_debate_in_excel(topic_id, claim_data, helper_type, chat_id, result, rounds, finish_reason="", 
-                         conviction_rates=None, feedback_tags=None, argument_quality_rates=None):
+                         conviction_rates=None, feedback_tags=None, argument_quality_rates=None,
+                         debate_quality_rating=None, debate_quality_review=None):
     """
     Save debate results to a central Excel file.
     Creates the file if it doesn't exist, otherwise appends to it.
@@ -63,6 +64,8 @@ def save_debate_in_excel(topic_id, claim_data, helper_type, chat_id, result, rou
         conviction_rates: List of conviction rates per round (optional)
         feedback_tags: List of feedback tags per round (optional)
         argument_quality_rates: List of argument quality rates per round (optional)
+        debate_quality_rating: Overall debate quality rating 1-10 (optional)
+        debate_quality_review: Professional review of debate quality (optional)
         
     Returns:
         bool: True if successful, False otherwise
@@ -98,6 +101,8 @@ def save_debate_in_excel(topic_id, claim_data, helper_type, chat_id, result, rou
                 'conviction_rates_vector': conviction_rates_json,
                 'feedback_tags_vector': feedback_tags_json,
                 'argument_quality_rates_vector': argument_quality_rates_json,
+                'debate_quality_rating': debate_quality_rating,
+                'debate_quality_review': debate_quality_review or '',
                 'chat_id': chat_id
             }
             

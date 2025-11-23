@@ -21,6 +21,7 @@ debate_settings:
     moderator_topic: ./prompts/moderator/moderator_topic_instruction.txt
     moderator_conviction: ./prompts/moderator/moderator_conviction_instruction.txt
     moderator_argument_quality: ./prompts/moderator/moderator_argument_quality_instruction.txt
+    moderator_debate_quality: ./prompts/moderator/moderator_debate_quality_instruction.txt
     # Helper prompts
     helper_fallacy_system: ./prompts/helper/fallacy_system.txt
     helper_fallacy_wrapper: ./prompts/helper/fallacy_wrapper.txt
@@ -64,8 +65,8 @@ agent_configurations:
       model_config_override: { temperature: 0.5 }
     
     moderator_argument_quality:
-      model_name: gemini_20_flash
-      model_config_override: { temperature: 0.5 }
+      model_name: gpt5
+      model_config_override: { temperature: 1 }
 
   # --- Default with Fallacy Helper Enabled --- 
   Default_Fallacy_Helper:
@@ -91,8 +92,8 @@ agent_configurations:
       model_config_override: { temperature: 0.5 }
     
     moderator_argument_quality:
-      model_name: gemini_20_flash
-      model_config_override: { temperature: 0.5 }
+      model_name: gpt5
+      model_config_override: { temperature: 1 }
 
   # --- Default with Vanilla Helper Enabled --- 
   
@@ -119,8 +120,8 @@ agent_configurations:
       model_config_override: { temperature: 0.5 }
     
     moderator_argument_quality:
-      model_name: gemini_20_flash
-      model_config_override: { temperature: 0.5 }
+      model_name: gpt5
+      model_config_override: { temperature: 1 }
 
   # --- Example Configuration using Local Gemma --- 
   Local_Gemma_Test:

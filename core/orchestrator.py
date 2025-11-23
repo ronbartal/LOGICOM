@@ -28,6 +28,7 @@ class DebateOrchestrator:
                  moderator_topic_checker: ModeratorAgent,
                  moderator_conviction: ModeratorAgent,
                  moderator_argument_quality: ModeratorAgent,
+                 moderator_debate_quality: ModeratorAgent,
                  # Settings
                  max_rounds: int,
                  turn_delay_seconds: float):
@@ -37,6 +38,7 @@ class DebateOrchestrator:
         self.moderator_topic = moderator_topic_checker
         self.moderator_conviction = moderator_conviction
         self.moderator_argument_quality = moderator_argument_quality
+        self.moderator_debate_quality = moderator_debate_quality
         self.turn_delay_seconds = turn_delay_seconds
         self.max_rounds = max_rounds
 
@@ -133,6 +135,7 @@ class DebateOrchestrator:
         self.moderator_topic.reset()
         self.moderator_conviction.reset()
         self.moderator_argument_quality.reset()
+        self.moderator_debate_quality.reset()
         
         # Log initial setup 
         logger.debug(f"Starting Debate, Topic: {topic_id}, Chat ID: {chat_id}", 
@@ -146,6 +149,7 @@ class DebateOrchestrator:
         logger.debug(f"Moderator (Topic): {self.moderator_topic.agent_name}", extra={"msg_type": "system"})
         logger.debug(f"Moderator (Conviction): {self.moderator_conviction.agent_name}", extra={"msg_type": "system"})
         logger.debug(f"Moderator (Argument Quality): {self.moderator_argument_quality.agent_name}", extra={"msg_type": "system"})
+        logger.debug(f"Moderator (Debate Quality): {self.moderator_debate_quality.agent_name}", extra={"msg_type": "system"})
         logger.debug(f"Max rounds limit set to: {self.max_rounds}", extra={"msg_type": "system"})
 
         return
@@ -377,6 +381,129 @@ class DebateOrchestrator:
         self._append_moderation_results_to_memories(persuader_memory, debater_memory, moderator_logs)
         
         return argument_quality_rate
+
+    def _run_debate_quality_check(self, topic_id: str, claim: str, chat_id: str, helper_type: str, log_config: Dict[str, Any]) -> Tuple[Optional[int], str]:
+        """Run the debate quality moderator to assess the overall debate quality.
+        
+        Parses the debate transcript from the debate_main.log JSONL file to get the complete, un-summarized debate.
+        
+        Returns:
+            Tuple of (debate_quality_rating, debate_quality_review)
+            debate_quality_rating: An integer 1-10 representing overall debate quality, or None if not parseable
+            debate_quality_review: A string containing the professional review
+        """
+        import json
+        import os
+        
+        # Construct the log file path - debate_main.log is saved in debates/topic_id/helper_type/chat_id
+        debates_base_dir = log_config.get('debates_base_dir', 'debates')
+        log_directory = os.path.join(debates_base_dir, topic_id, helper_type, chat_id)
+        log_file_path = os.path.join(log_directory, "debate_main.log")
+        
+        # Parse debate transcript from JSONL log file
+        debate_transcript = []
+        try:
+            if os.path.exists(log_file_path):
+                with open(log_file_path, 'r', encoding='utf-8') as f:
+                    for line in f:
+                        line = line.strip()
+                        if not line:
+                            continue
+                        try:
+                            log_entry = json.loads(line)
+                            # Only process main debate messages
+                            if log_entry.get('msg_type') == 'main debate':
+                                sender = log_entry.get('sender', '')
+                                message = log_entry.get('message', '')
+                                
+                                # Filter out moderator messages and system messages
+                                if sender and sender.lower() not in ['moderator', 'orchestrator'] and message:
+                                    # Map sender names to display names
+                                    if 'persuader' in sender.lower() or sender.lower() == 'persuador':
+                                        debate_transcript.append({"role": "PERSUADER", "content": message})
+                                    elif 'debater' in sender.lower():
+                                        debate_transcript.append({"role": "DEBATER", "content": message})
+                        except json.JSONDecodeError:
+                            # Skip invalid JSON lines
+                            continue
+            else:
+                logger.warning(f"Log file not found at {log_file_path}, falling back to memory", 
+                             extra={"msg_type": "main debate", "sender": "moderator"})
+                # Fallback to memory if log file doesn't exist yet
+                persuader_history = self.persuader.memory.get_history_as_prompt()
+                debater_history = self.debater.memory.get_history_as_prompt()
+                
+                if persuader_history:
+                    debate_transcript.append({"role": "PERSUADER", "content": persuader_history[0].get('content', '')})
+                
+                min_len = min(len(persuader_history) - 1, len(debater_history))
+                for i in range(min_len):
+                    if i < len(debater_history):
+                        debate_transcript.append({"role": "DEBATER", "content": debater_history[i].get('content', '')})
+                    if i + 1 < len(persuader_history):
+                        debate_transcript.append({"role": "PERSUADER", "content": persuader_history[i + 1].get('content', '')})
+        except Exception as e:
+            logger.error(f"Error parsing debate from log file {log_file_path}: {e}", 
+                        extra={"msg_type": "main debate", "sender": "moderator"})
+            # Fallback to empty transcript
+            debate_transcript = []
+        
+        # Format transcript as text for the moderator
+        if debate_transcript:
+            transcript_text = "\n\n".join([f"{msg['role']}:\n{msg['content']}" for msg in debate_transcript])
+        else:
+            transcript_text = "No debate transcript available."
+        
+        # Format the full context for the moderator (includes the debate transcript)
+        full_context = f"Here is the complete debate transcript:\n\n{transcript_text}"
+        
+        # Call the debate quality moderator
+        debate_quality_result = self.moderator_debate_quality.call(full_context)
+        
+        # Log the raw moderator response
+        logger.debug(f"Debate quality moderator raw response: '{debate_quality_result}'",
+                   extra={"msg_type": "main debate", "sender": "moderator"})
+        
+        # Parse rating and review from response
+        debate_quality_rating = None
+        debate_quality_review = ""
+        
+        try:
+            import re
+            raw_text = debate_quality_result.strip()
+            
+            # Extract rating (look for "Rating: 8" or "RATING:8")
+            rate_match = re.search(r'RATING:\s*(\d+)', raw_text, re.IGNORECASE)
+            if rate_match:
+                debate_quality_rating = int(rate_match.group(1))
+                if debate_quality_rating < 1 or debate_quality_rating > 10:
+                    logger.warning(f"Debate quality rating {debate_quality_rating} out of range 1-10, using None",
+                                 extra={"msg_type": "main debate", "sender": "moderator"})
+                    debate_quality_rating = None
+            
+            # Extract review (everything after "Review:" or "REVIEW:")
+            review_match = re.search(r'REVIEW:\s*(.+?)(?:\n\n|\Z)', raw_text, re.IGNORECASE | re.DOTALL)
+            if review_match:
+                debate_quality_review = review_match.group(1).strip()
+            else:
+                # If no explicit Review: tag, try to extract everything after the rating
+                if rate_match:
+                    review_start = rate_match.end()
+                    debate_quality_review = raw_text[review_start:].strip()
+                    # Remove any remaining "Review:" prefix if present
+                    debate_quality_review = re.sub(r'^REVIEW:\s*', '', debate_quality_review, flags=re.IGNORECASE).strip()
+                else:
+                    debate_quality_review = raw_text
+            
+            if not debate_quality_review:
+                debate_quality_review = "No review provided."
+                
+        except Exception as e:
+            logger.warning(f"Could not parse debate quality rating/review from '{debate_quality_result}': {e}", 
+                         extra={"msg_type": "main debate", "sender": "moderator"})
+            debate_quality_review = debate_quality_result if debate_quality_result else "Error parsing review."
+        
+        return debate_quality_rating, debate_quality_review
     #TODO: make the memory incapsuled in agents
     def _append_moderation_results_to_memories(self, persuader_memory: MemoryInterface, debater_memory: MemoryInterface, moderator_logs: List[Dict[str, Any]]):
         """Log the results of moderation checks."""
@@ -401,13 +528,22 @@ class DebateOrchestrator:
         # Get argument quality rates from persuader's memory
         argument_quality_rates = self.persuader.memory.get_argument_quality_rates()
         
-        # Log debate end with all metadata needed for HTML/XLSX generation, including token usage, feedback tags, conviction rates, and argument quality rates
+        # Run debate quality moderator to get overall debate rating and review
+        debate_quality_rating, debate_quality_review = self._run_debate_quality_check(topic_id, claim, chat_id, helper_type, log_config)
+        
+        # Log debate end with all metadata needed for HTML/XLSX generation, including token usage, feedback tags, conviction rates, argument quality rates, and debate quality
         logger.info(f"Debate ended with result: {final_result_status} !!!!", 
                    extra={"msg_type": "main debate", "sender": "orchestrator", "topic_id": topic_id, 
                           "chat_id": chat_id, "helper_type": helper_type, "result": final_result_status, 
                           "rounds": round_number, "finish_reason": finish_reason, "claim": claim,
                           "token_usage": token_usage, "feedback_tags": feedback_tags, "conviction_rates": conviction_rates,
-                          "argument_quality_rates": argument_quality_rates})
+                          "argument_quality_rates": argument_quality_rates, "debate_quality_rating": debate_quality_rating,
+                          "debate_quality_review": debate_quality_review})
+        
+        # Log the debate quality review as a separate main debate message
+        logger.info(f"Debate Quality Assessment - Rating: {debate_quality_rating}/10\nReview: {debate_quality_review}",
+                   extra={"msg_type": "main debate", "sender": "moderator", "topic_id": topic_id, 
+                          "chat_id": chat_id})
 
         # Return just the essential summary information
         return {
@@ -418,7 +554,9 @@ class DebateOrchestrator:
             "total_tokens_estimate": token_usage,
             "feedback_tags": feedback_tags,
             "conviction_rates": conviction_rates,
-            "argument_quality_rates": argument_quality_rates
+            "argument_quality_rates": argument_quality_rates,
+            "debate_quality_rating": debate_quality_rating,
+            "debate_quality_review": debate_quality_review
         }
     #TODO, make the agents independent of the orchestrator
     def _calculate_token_usage(self) -> int:
@@ -430,17 +568,18 @@ class DebateOrchestrator:
         topic_mod_tokens = self.moderator_topic.get_total_token_usage()["total_tokens"]
         conviction_mod_tokens = self.moderator_conviction.get_total_token_usage()["total_tokens"]
         arg_quality_mod_tokens = self.moderator_argument_quality.get_total_token_usage()["total_tokens"]
+        debate_quality_mod_tokens = self.moderator_debate_quality.get_total_token_usage()["total_tokens"]
         
         # Helper tokens are tracked separately
         helper_tokens = self.persuader.helper_token_used if self.persuader.use_helper_feedback else 0
         
-        total_tokens = persuader_tokens + debater_tokens + term_mod_tokens + topic_mod_tokens + conviction_mod_tokens + arg_quality_mod_tokens + helper_tokens
+        total_tokens = persuader_tokens + debater_tokens + term_mod_tokens + topic_mod_tokens + conviction_mod_tokens + arg_quality_mod_tokens + debate_quality_mod_tokens + helper_tokens
         
         # Log the token counts
         logger.info(
             f"Token Estimates: Persuader={persuader_tokens}, "
             f"Debater={debater_tokens}, "
-            f"Moderator={term_mod_tokens + topic_mod_tokens + conviction_mod_tokens + arg_quality_mod_tokens}, "
+            f"Moderator={term_mod_tokens + topic_mod_tokens + conviction_mod_tokens + arg_quality_mod_tokens + debate_quality_mod_tokens}, "
             f"Helper={helper_tokens}, "
             f"Total={total_tokens}"
         )
