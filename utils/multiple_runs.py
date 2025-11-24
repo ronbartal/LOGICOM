@@ -242,6 +242,27 @@ def main():
     
     print(f"\n📁 Results saved in: {results_dir}")
     
+    # Run analysis script automatically
+    excel_file_path = os.path.join(results_dir, "all_debates_summary.xlsx")
+    if os.path.exists(excel_file_path):
+        print(f"\n{'='*50}")
+        print(f"Running analysis script...")
+        print(f"{'='*50}")
+        try:
+            analysis_output_dir = os.path.join(results_dir, "analysis")
+            analysis_script = os.path.join("utils", "analyze_debate_results.py")
+            cmd = [sys.executable, analysis_script, excel_file_path, analysis_output_dir]
+            result = subprocess.run(cmd, capture_output=False, text=True, cwd=Path.cwd())
+            if result.returncode == 0:
+                print(f"✓ Analysis completed successfully!")
+                print(f"  Analysis results saved to: {analysis_output_dir}")
+            else:
+                print(f"✗ Analysis script failed with return code: {result.returncode}")
+        except Exception as e:
+            print(f"✗ Failed to run analysis script: {e}")
+    else:
+        print(f"⚠ Excel file not found at {excel_file_path}, skipping analysis")
+    
     if failed_runs > 0:
         sys.exit(1)
     else:

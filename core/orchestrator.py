@@ -427,7 +427,8 @@ class DebateOrchestrator:
                             # Skip invalid JSON lines
                             continue
             else:
-                logger.warning(f"Log file not found at {log_file_path}, falling back to memory", 
+                # Log at debug level instead of warning since fallback works fine
+                logger.debug(f"Log file not found at {log_file_path}, falling back to memory", 
                              extra={"msg_type": "main debate", "sender": "moderator"})
                 # Fallback to memory if log file doesn't exist yet
                 persuader_history = self.persuader.memory.get_history_as_prompt()

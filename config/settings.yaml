@@ -61,7 +61,7 @@ agent_configurations:
       model_config_override: {}
 
     moderator:
-      model_name: gemini_20_flash
+      model_name: gpt35_turbo
       model_config_override: { temperature: 0.5 }
     
     moderator_argument_quality:
@@ -88,7 +88,7 @@ agent_configurations:
         temperature: 1.0 
 
     moderator:
-      model_name: gemini_20_flash
+      model_name: gpt35_turbo
       model_config_override: { temperature: 0.5 }
     
     moderator_argument_quality:
@@ -116,7 +116,7 @@ agent_configurations:
         temperature: 1.0 
 
     moderator:
-      model_name: gemini_20_flash
+      model_name: gpt35_turbo
       model_config_override: { temperature: 0.5 }
     
     moderator_argument_quality:

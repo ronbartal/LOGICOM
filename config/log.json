@@ -64,13 +64,13 @@
     },
     "loggers": {
         "debate_logger": {
-            "handlers": ["main_handler", "debug_handler", "persuador_helper_handler", "console_handler"],
+            "handlers": ["main_handler", "persuador_helper_handler", "console_handler"],
             "level": "DEBUG",
             "propagate": false
         }
     },
     "root": {
-        "handlers": ["debug_handler"],
+        "handlers": [],
         "level": "INFO"
     }
 }

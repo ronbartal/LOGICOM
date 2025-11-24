@@ -155,10 +155,12 @@ def _run_single_debate(index: int,
         )
         
         # Run debate
+        # Add debates_base_dir to log_config so orchestrator knows where to find log files
+        log_config_with_debates_dir = {**debate_settings, 'debates_base_dir': debates_base_dir}
         run_result_data = orchestrator.run_debate(
             topic_id=topic_id, 
             claim=claim_text, 
-            log_config=debate_settings,
+            log_config=log_config_with_debates_dir,
             helper_type=helper_type,
             chat_id=chat_id
         )
