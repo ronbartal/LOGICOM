@@ -40,7 +40,7 @@ debate_settings:
   # Debate Flow Control
   max_rounds: 10 
   # Delay between turns
-  turn_delay_seconds: 0.1
+  turn_delay_seconds: 0.2
   
   # Memory Management
   summarization_trigger_tokens: 4000 #Token threshold to trigger summarization
@@ -53,11 +53,11 @@ agent_configurations:
 
     persuader:
       # Reference to LLM config in models.yaml
-      model_name: gpt41_nano
+      model_name: gpt41
       model_config_override: {}
 
     debater:
-      model_name: gpt41_nano 
+      model_name: gpt41 
       model_config_override: {}
 
     moderator:
@@ -74,15 +74,15 @@ agent_configurations:
 
     persuader:
       # Reference to LLM config in models.yaml
-      model_name: gpt41_nano
+      model_name: gpt41
       model_config_override: {}
 
       # Helper Config 
-      helper_model_name: gpt41_nano
+      helper_model_name: gpt41
       helper_model_config_override: {} 
 
     debater:
-      model_name: gpt41_nano 
+      model_name: gpt41
       model_config_override: {}
 
     moderator:
@@ -100,15 +100,15 @@ agent_configurations:
 
     persuader:
       # Reference to LLM config in models.yaml
-      model_name: gpt41_nano
+      model_name: gpt41
       model_config_override: {}
 
       # Helper Config 
-      helper_model_name: gpt41_nano 
+      helper_model_name: gpt41
       helper_model_config_override: {} 
 
     debater:
-      model_name: gpt41_nano 
+      model_name: gpt41
       model_config_override: {}
 
     moderator:

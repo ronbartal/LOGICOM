@@ -40,7 +40,7 @@ debate_settings:
   # Debate Flow Control
   max_rounds: 10 
   # Delay between turns
-  turn_delay_seconds: 0.1
+  turn_delay_seconds: 0.2
   
   # Memory Management
   summarization_trigger_tokens: 4000 #Token threshold to trigger summarization
