@@ -68,7 +68,6 @@ def select_prompts_by_gender(loaded_prompts: Dict[str, str],
             logger.debug("Using gender-aware debater system prompt", extra={"msg_type": "system"})
     else:
         # Use legacy prompts (already loaded as default)
-        print("Using legacy debater prompts (no gender specified)")
         logger.debug("Using legacy debater prompts (no gender specified)", extra={"msg_type": "system"})
     
     del selected_prompts['persuader_system_gender']
