@@ -47,7 +47,6 @@ def select_prompts_by_gender(loaded_prompts: Dict[str, str],
     # Select persuader prompts
     if persuader_gender is not None:
         # Use gender-aware prompts
-        print(f"persuader_gender: {persuader_gender}")
         if 'persuader_system_gender' in loaded_prompts:
             selected_prompts['persuader_system'] = loaded_prompts['persuader_system_gender']
             logger.debug("Using gender-aware persuader system prompt", extra={"msg_type": "system"})
@@ -60,7 +59,6 @@ def select_prompts_by_gender(loaded_prompts: Dict[str, str],
     # Select debater prompts
     if debater_gender is not None:
         # Use gender-aware prompts
-        print(f"debater_gender: {debater_gender}")
         if 'debater_system_gender' in loaded_prompts:
             selected_prompts['debater_system'] = loaded_prompts['debater_system_gender']
             logger.debug("Using gender-aware debater system prompt", extra={"msg_type": "system"})
