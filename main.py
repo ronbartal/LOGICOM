@@ -126,7 +126,8 @@ def _run_single_debate(index: int,
                          helper_type: str,
                          debates_base_dir: str = "debates",
                          persuader_name_by_gender: str = "Josh",
-                         debater_name_by_gender: str = "Laura") -> Dict:
+                         debater_name_by_gender: str = "Laura",
+                         gender_case: str = None) -> Dict:
     """Sets up and runs a single debate instance, handling errors."""
     topic_id = "N/A"
     run_result = {}
@@ -224,7 +225,8 @@ def _run_single_debate(index: int,
             feedback_tags,
             argument_quality_rates,
             debate_quality_rating,
-            debate_quality_review
+            debate_quality_review,
+            gender_case=gender_case
         )
         if excel_success:
             logger.info(f"Successfully saved debate summary to Excel", extra={"msg_type": "system"})
