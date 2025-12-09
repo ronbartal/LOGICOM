@@ -33,8 +33,5 @@ API_keys
 # Log files and outputs
 logs/
 *.log
-debates/
 tests/
-results/
 config/settings.yaml
-debate_analysis_output/
