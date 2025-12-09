@@ -56,9 +56,7 @@ def select_prompts_by_gender(loaded_prompts: Dict[str, str],
             logger.debug("Using gender-aware persuader initial prompt", extra={"msg_type": "system"})
     else:
         # Use legacy prompts (already loaded as default)
-        print("Using legacy persuader prompts (no gender specified)")
         logger.debug("Using legacy persuader prompts (no gender specified)", extra={"msg_type": "system"})
-
     # Select debater prompts
     if debater_gender is not None:
         # Use gender-aware prompts
@@ -68,7 +66,6 @@ def select_prompts_by_gender(loaded_prompts: Dict[str, str],
             logger.debug("Using gender-aware debater system prompt", extra={"msg_type": "system"})
     else:
         # Use legacy prompts (already loaded as default)
-        print("Using legacy debater prompts (no gender specified)")
         logger.debug("Using legacy debater prompts (no gender specified)", extra={"msg_type": "system"})
     
     if selected_prompts.get('persuader_system_gender'): del selected_prompts['persuader_system_gender']
@@ -112,8 +109,8 @@ def format_prompts_for_claim(debate_settings: Dict[str, Any],
         "CLAIM": claim_text,
         "TOPIC": topic_text,
         "REASON": reason_text,
-        "PERSUADER_NAME_BY_GENDER": persuader_name_by_gender if persuader_name_by_gender else "WARNING! SHOULDENT BE HERE!",
-        "DEBATER_NAME_BY_GENDER": debater_name_by_gender if debater_name_by_gender else "WARNING! SHOULDENT BE HERE!"
+        "PERSUADER_NAME_BY_GENDER": persuader_name_by_gender if persuader_name_by_gender else "WARNING! SHOULDN'T BE HERE!",
+        "DEBATER_NAME_BY_GENDER": debater_name_by_gender if debater_name_by_gender else "WARNING! SHOULDN'T BE HERE!"
     }
 
     # Debugging: Log the keys available right before formatting
