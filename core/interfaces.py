@@ -66,6 +66,21 @@ class MemoryInterface(ABC):
         """Resets the memory, clearing the conversation history."""
         pass
 
+    @abstractmethod
+    def get_feedback_tags(self) -> List[Any]:
+        """Returns the list of feedback tags collected during the conversation."""
+        pass
+
+    @abstractmethod
+    def get_conviction_rates(self) -> List[Any]:
+        """Returns the list of conviction rates collected during the conversation."""
+        pass
+
+    @abstractmethod
+    def get_argument_quality_rates(self) -> List[Any]:
+        """Returns the list of argument quality rates collected during the conversation."""
+        pass
+
 
 class AgentInterface(ABC):
     """Interface for agents participating in the debate."""

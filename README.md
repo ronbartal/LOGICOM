@@ -122,21 +122,21 @@ python main.py [OPTIONS]
 
 **Options:**
 
-*   `--config_run_name <NAME>`: Specifies which agent configuration section from `settings.yaml` to use (default: `Default_NoHelper`).
+*   `--helper_type <TYPE>`: Specifies which helper type configuration to use (default: `Default_No_Helper`).
 *   `--claim_index <INDEX>`: Run only for a specific claim index (0-based) in the dataset. If omitted, runs for all claims.
 *   `--settings_path <PATH>`: Path to the settings YAML file (default: `./config/settings.yaml`).
 *   `--models_path <PATH>`: Path to the models YAML file (default: `./config/models.yaml`).
 
-**Example:** Run the default 'Default_NoHelper' configuration for claim index 5:
+**Example:** Run the default 'Default_No_Helper' configuration for claim index 5:
 
 ```bash
-python main.py --config_run_name Default_NoHelper --claim_index 5 
+python main.py --helper_type Default_No_Helper --claim_index 5 
 ```
 
 **Example:** Run a hypothetical 'LocalRun_Llama3' configuration for all claims:
 
 ```bash
-python main.py --config_run_name LocalRun_Llama3
+python main.py --helper_type LocalRun_Llama3
 ```
 
 ## Configuration
@@ -144,7 +144,7 @@ python main.py --config_run_name LocalRun_Llama3
 *   **`config/models.yaml`**: Define different LLM providers (OpenAI, Gemini, local) and their connection details (API keys/endpoints, model names, default parameters).
 *   **`config/settings.yaml`**: 
     *   `debate_settings`: Configure data paths (using `claims/` by default), logging options (`log_base_path` defaults to `logs/`, log formats), max rounds, memory settings, column mappings.
-    *   `agent_configurations`: Define different named setups (e.g., `Default_NoHelper`, `Default_FallacyHelper`). Each setup specifies which LLM config (`llm_config_ref`), prompt template paths, and specific parameters to use for the Persuader, Debater, and Moderator(s).
+    *   `agent_configurations`: Define different named setups (e.g., `Default_No_Helper`, `Default_Fallacy_Helper`). Each setup specifies which LLM config (`llm_config_ref`), prompt template paths, and specific parameters to use for the Persuader, Debater, and Moderator(s).
 
 ## Local LLMs
 
@@ -156,4 +156,4 @@ To use a local LLM:
     *   Set `local_type: ollama` or `local_type: generic` (for OpenAI-compatible APIs).
     *   Specify the `api_base_url` and `model_name`.
 3.  Create a run configuration in `config/settings.yaml` under `agent_configurations` that references your local LLM config using `llm_config_ref`.
-4.  Run `main.py` using the `--config_run_name` option pointing to your local run configuration. 
+4.  Run `main.py` using the `--helper_type` option pointing to your local run configuration. 
