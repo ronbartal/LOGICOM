@@ -45,7 +45,7 @@
             "class": "logging.FileHandler",
             "filename": "logs/debate_debug.log",
             "formatter": "json",
-            "level": "INFO"
+            "level": "DEBUG"
         },
         "persuador_helper_handler": {
             "class": "logging.FileHandler",
@@ -64,7 +64,7 @@
     },
     "loggers": {
         "debate_logger": {
-            "handlers": ["main_handler", "persuador_helper_handler", "console_handler"],
+            "handlers": ["main_handler", "persuador_helper_handler", "console_handler", "debug_handler"],
             "level": "DEBUG",
             "propagate": false
         }
