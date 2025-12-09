@@ -71,9 +71,9 @@ def select_prompts_by_gender(loaded_prompts: Dict[str, str],
         print("Using legacy debater prompts (no gender specified)")
         logger.debug("Using legacy debater prompts (no gender specified)", extra={"msg_type": "system"})
     
-    del selected_prompts['persuader_system_gender']
-    del selected_prompts['persuader_initial_gender']
-    del selected_prompts['debater_system_gender']
+    if selected_prompts.get('persuader_system_gender'): del selected_prompts['persuader_system_gender']
+    if selected_prompts.get('persuader_initial_gender'): del selected_prompts['persuader_initial_gender']
+    if selected_prompts.get('debater_system_gender'): del selected_prompts['debater_system_gender']
     return selected_prompts
 
 # --- Helper to format prompts for a specific claim ---
@@ -153,7 +153,7 @@ def define_arguments() -> argparse.Namespace:
                         help="Override the maximum number of debate rounds (default is from settings.yaml)")
     parser.add_argument("--debates_dir", default="debates",
                         help="Directory where debate logs should be saved (default: debates)")
-    parser.add_argument("--persuader_gender", "--pesuader_gender",
+    parser.add_argument("--persuader_gender",
                         dest="persuader_gender",
                         choices=["M", "F"],
                         default=None,
