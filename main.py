@@ -112,8 +112,8 @@ def format_prompts_for_claim(debate_settings: Dict[str, Any],
         "CLAIM": claim_text,
         "TOPIC": topic_text,
         "REASON": reason_text,
-        "PERSUADER_NAME_BY_GENDER": persuader_name_by_gender if persuader_name_by_gender else "WARNING! SHOULDENT BE HERE!",
-        "DEBATER_NAME_BY_GENDER": debater_name_by_gender if debater_name_by_gender else "WARNING! SHOULDENT BE HERE!"
+        "PERSUADER_NAME_BY_GENDER": persuader_name_by_gender if persuader_name_by_gender else "WARNING! SHOULDN'T BE HERE!",
+        "DEBATER_NAME_BY_GENDER": debater_name_by_gender if debater_name_by_gender else "WARNING! SHOULDN'T BE HERE!"
     }
 
     # Debugging: Log the keys available right before formatting
