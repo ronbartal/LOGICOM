@@ -68,9 +68,9 @@ def select_prompts_by_gender(loaded_prompts: Dict[str, str],
         # Use legacy prompts (already loaded as default)
         logger.debug("Using legacy debater prompts (no gender specified)", extra={"msg_type": "system"})
     
-    if selected_prompts.get('persuader_system_gender'): del selected_prompts['persuader_system_gender']
-    if selected_prompts.get('persuader_initial_gender'): del selected_prompts['persuader_initial_gender']
-    if selected_prompts.get('debater_system_gender'): del selected_prompts['debater_system_gender']
+    selected_prompts.pop('persuader_system_gender', None)
+    selected_prompts.pop('persuader_initial_gender', None)
+    selected_prompts.pop('debater_system_gender', None)
     return selected_prompts
 
 # --- Helper to format prompts for a specific claim ---
