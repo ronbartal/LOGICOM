@@ -1,6 +1,6 @@
 """
 Test script to run debates with all gender combinations.
-Runs 4*n*k debates: k debates for each of the 4 gender combinations (M,M), (M,F), (F,M), (F,F)
+Runs 4*n*k debates: k debates for each of the 5 gender combinations (M,M), (M,F), (F,M), (F,F), legacy - no gender awerness
 for each of n claims (indices 0 to n-1).
 """
 import sys
@@ -12,7 +12,7 @@ from tqdm import tqdm
 from utils.log_main import logger as debate_logger
 from utils.set_api_keys import set_environment_variables_from_file, API_KEYS_PATH
 from config.loader import load_app_config
-from main import _run_single_debate
+from main import _run_single_debate, select_prompts_by_gender
 
 # Use colorama for terminal colors
 from colorama import init
@@ -72,7 +72,7 @@ def main():
             args.n = num_claims
         
         print(f"n={args.n} claims, k={args.k} debates per combination")
-        print(f"Total debates: {4 * args.n * args.k}")
+        print(f"Total debates: {5 * args.n * args.k}")  # 5 combinations: M_M, M_F, F_M, F_F, None_None
     
         
         # Override max_rounds if provided
@@ -87,7 +87,8 @@ def main():
             ("M", "M", "M_M"),
             ("M", "F", "M_F"),
             ("F", "M", "F_M"),
-            ("F", "F", "F_F")
+            ("F", "F", "F_F"),
+            (None, None, "No-gender")
         ]
         
         # Name mappings
@@ -95,7 +96,7 @@ def main():
         debater_names = {"M": "Mike", "F": "Laura"}
         
         # Total number of debates
-        total_debates = 4 * args.n * args.k
+        total_debates = 5 * args.n * args.k
         pbar = tqdm(total=total_debates, desc="Running Gender Tests")
         
         # Run debates for each claim index
@@ -104,18 +105,33 @@ def main():
             
             # For each gender combination
             for persuader_gender, debater_gender, gender_case in gender_combinations:
+                # Select prompts based on gender flags for this combination
+                selected_prompts = select_prompts_by_gender(
+                    prompt_templates,
+                    persuader_gender=persuader_gender,
+                    debater_gender=debater_gender
+                )
+                
+                # Get names only if gender is specified (None for legacy mode)
+                if persuader_gender is not None:
+                    persuader_name = persuader_names[persuader_gender]
+                else:
+                    persuader_name = None
+                
+                if debater_gender is not None:
+                    debater_name = debater_names[debater_gender]
+                else:
+                    debater_name = None
+                
                 # Run k debates for this combination
                 for run_num in range(args.k):
                     try:
-                        persuader_name = persuader_names[persuader_gender]
-                        debater_name = debater_names[debater_gender]
-                        
                         run_result = _run_single_debate(
                             index=claim_idx,
                             claim_data=claim_data,
                             debate_settings=debate_settings,
                             agent_config=agent_config,
-                            prompt_templates=prompt_templates,
+                            prompt_templates=selected_prompts,
                             helper_type=helper_type,
                             debates_base_dir=args.debates_dir,
                             persuader_name_by_gender=persuader_name,
