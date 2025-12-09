@@ -31,7 +31,9 @@ def _setup_api_keys():
 # --- Helper to format prompts for a specific claim ---
 def format_prompts_for_claim(debate_settings: Dict[str, Any], 
                                claim_data: pd.Series, 
-                               loaded_prompts: Dict[str, str]) -> Tuple[Dict[str, str], str, str]:
+                               loaded_prompts: Dict[str, str],
+                               persuader_name_by_gender: str = "Josh",
+                               debater_name_by_gender: str = "Laura") -> Tuple[Dict[str, str], str, str]:
     """Formats all loaded prompts using data from the current claim row.
 
     Raises:
@@ -60,7 +62,9 @@ def format_prompts_for_claim(debate_settings: Dict[str, Any],
     str_context = {
         "CLAIM": claim_text,
         "TOPIC": topic_text,
-        "REASON": reason_text
+        "REASON": reason_text,
+        "PERSUADER_NAME_BY_GENDER": persuader_name_by_gender,
+        "DEBATER_NAME_BY_GENDER": debater_name_by_gender
     }
 
     # Debugging: Log the keys available right before formatting
@@ -100,6 +104,16 @@ def define_arguments() -> argparse.Namespace:
                         help="Override the maximum number of debate rounds (default is from settings.yaml)")
     parser.add_argument("--debates_dir", default="debates",
                         help="Directory where debate logs should be saved (default: debates)")
+    parser.add_argument("--persuader_gender", "--pesuader_gender",
+                        dest="persuader_gender",
+                        choices=["M", "F"],
+                        default="M",
+                        help="Gender for persuader name substitution (M=Josh, F=Karen).")
+    parser.add_argument("--debater_gender",
+                        dest="debater_gender",
+                        choices=["M", "F"],
+                        default="F",
+                        help="Gender for debater name substitution (M=Mike, F=Laura).")
     args = parser.parse_args()
     return args
 
@@ -110,7 +124,9 @@ def _run_single_debate(index: int,
                          agent_config: Dict, 
                          prompt_templates: Dict, 
                          helper_type: str,
-                         debates_base_dir: str = "debates") -> Dict:
+                         debates_base_dir: str = "debates",
+                         persuader_name_by_gender: str = "Josh",
+                         debater_name_by_gender: str = "Laura") -> Dict:
     """Sets up and runs a single debate instance, handling errors."""
     topic_id = "N/A"
     run_result = {}
@@ -122,7 +138,13 @@ def _run_single_debate(index: int,
             raise ValueError("Failed to generate a valid chat_id")
 
         # Format prompts for this claim (includes extracting topic_id, claim_text)
-        formatted_prompts, topic_id, claim_text = format_prompts_for_claim(debate_settings, claim_data, prompt_templates)
+        formatted_prompts, topic_id, claim_text = format_prompts_for_claim(
+            debate_settings, 
+            claim_data, 
+            prompt_templates,
+            name_by_gender=persuader_name_by_gender,
+            debater_name_by_gender=debater_name_by_gender
+        )
 
         # Create directory structure for logs - do this early before anything can fail
         chat_dir = create_debate_directory(topic_id, chat_id, helper_type, debates_base_dir)
@@ -277,6 +299,8 @@ def main():
     print("Application starting...")
 
     args = define_arguments()
+    persuader_name_by_gender = "Josh" if args.persuader_gender.upper() == "M" else "Karen"
+    debater_name_by_gender = "Mike" if args.debater_gender.upper() == "M" else "Laura"
     
     _setup_api_keys()
 
@@ -325,7 +349,9 @@ def main():
                 agent_config=agent_config,
                 prompt_templates=prompt_templates,
                 helper_type=helper_type,
-                debates_base_dir=args.debates_dir
+                debates_base_dir=args.debates_dir,
+                persuader_name_by_gender=persuader_name_by_gender,
+                debater_name_by_gender=debater_name_by_gender
             )
             # results_summary.append(run_result)
 
