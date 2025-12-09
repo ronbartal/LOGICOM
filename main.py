@@ -56,9 +56,7 @@ def select_prompts_by_gender(loaded_prompts: Dict[str, str],
             logger.debug("Using gender-aware persuader initial prompt", extra={"msg_type": "system"})
     else:
         # Use legacy prompts (already loaded as default)
-        print("Using legacy persuader prompts (no gender specified)")
         logger.debug("Using legacy persuader prompts (no gender specified)", extra={"msg_type": "system"})
-
     # Select debater prompts
     if debater_gender is not None:
         # Use gender-aware prompts
