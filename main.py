@@ -28,10 +28,57 @@ def _setup_api_keys():
     """Sets API keys from the API_keys file."""
     set_environment_variables_from_file(API_KEYS_PATH)
 
+# --- Helper to select prompts based on gender flags ---
+def select_prompts_by_gender(loaded_prompts: Dict[str, str], 
+                              persuader_gender: Optional[str] = None,
+                              debater_gender: Optional[str] = None) -> Dict[str, str]:
+    """Selects between gender-aware and legacy prompts based on gender flags.
+    
+    Args:
+        loaded_prompts: Dictionary of all loaded prompts (both gender-aware and legacy)
+        persuader_gender: "M", "F", or None
+        debater_gender: "M", "F", or None
+    
+    Returns:
+        Dictionary with selected prompts (using gender-aware if gender specified, legacy otherwise)
+    """
+    selected_prompts = loaded_prompts.copy()
+    
+    # Select persuader prompts
+    if persuader_gender is not None:
+        # Use gender-aware prompts
+        print(f"persuader_gender: {persuader_gender}")
+        if 'persuader_system_gender' in loaded_prompts:
+            selected_prompts['persuader_system'] = loaded_prompts['persuader_system_gender']
+            logger.debug("Using gender-aware persuader system prompt", extra={"msg_type": "system"})
+        if 'persuader_initial_gender' in loaded_prompts:
+            selected_prompts['persuader_initial'] = loaded_prompts['persuader_initial_gender']
+            logger.debug("Using gender-aware persuader initial prompt", extra={"msg_type": "system"})
+    else:
+        # Use legacy prompts (already loaded as default)
+        logger.debug("Using legacy persuader prompts (no gender specified)", extra={"msg_type": "system"})
+    # Select debater prompts
+    if debater_gender is not None:
+        # Use gender-aware prompts
+        print(f"debater_gender: {debater_gender}")
+        if 'debater_system_gender' in loaded_prompts:
+            selected_prompts['debater_system'] = loaded_prompts['debater_system_gender']
+            logger.debug("Using gender-aware debater system prompt", extra={"msg_type": "system"})
+    else:
+        # Use legacy prompts (already loaded as default)
+        logger.debug("Using legacy debater prompts (no gender specified)", extra={"msg_type": "system"})
+    
+    del selected_prompts['persuader_system_gender']
+    del selected_prompts['persuader_initial_gender']
+    del selected_prompts['debater_system_gender']
+    return selected_prompts
+
 # --- Helper to format prompts for a specific claim ---
 def format_prompts_for_claim(debate_settings: Dict[str, Any], 
                                claim_data: pd.Series, 
-                               loaded_prompts: Dict[str, str]) -> Tuple[Dict[str, str], str, str]:
+                               loaded_prompts: Dict[str, str],
+                               persuader_name_by_gender: Optional[str] = None,
+                               debater_name_by_gender: Optional[str] = None) -> Tuple[Dict[str, str], str, str]:
     """Formats all loaded prompts using data from the current claim row.
 
     Raises:
@@ -57,10 +104,13 @@ def format_prompts_for_claim(debate_settings: Dict[str, Any],
     reason_text = str(claim_data[reason_col_name])
 
     # 3. Build context dictionary with keys matching placeholders
+    # Use empty string if name is None (for legacy mode)
     str_context = {
         "CLAIM": claim_text,
         "TOPIC": topic_text,
-        "REASON": reason_text
+        "REASON": reason_text,
+        "PERSUADER_NAME_BY_GENDER": persuader_name_by_gender if persuader_name_by_gender else "WARNING! SHOULDN'T BE HERE!",
+        "DEBATER_NAME_BY_GENDER": debater_name_by_gender if debater_name_by_gender else "WARNING! SHOULDN'T BE HERE!"
     }
 
     # Debugging: Log the keys available right before formatting
@@ -100,6 +150,16 @@ def define_arguments() -> argparse.Namespace:
                         help="Override the maximum number of debate rounds (default is from settings.yaml)")
     parser.add_argument("--debates_dir", default="debates",
                         help="Directory where debate logs should be saved (default: debates)")
+    parser.add_argument("--persuader_gender",
+                        dest="persuader_gender",
+                        choices=["M", "F"],
+                        default=None,
+                        help="Gender for persuader name substitution (M=Josh, F=Karen). If not specified, uses legacy prompts without gender/naming.")
+    parser.add_argument("--debater_gender",
+                        dest="debater_gender",
+                        choices=["M", "F"],
+                        default=None,
+                        help="Gender for debater name substitution (M=Mike, F=Laura). If not specified, uses legacy prompts without gender/naming.")
     args = parser.parse_args()
     return args
 
@@ -110,7 +170,10 @@ def _run_single_debate(index: int,
                          agent_config: Dict, 
                          prompt_templates: Dict, 
                          helper_type: str,
-                         debates_base_dir: str = "debates") -> Dict:
+                         debates_base_dir: str = "debates",
+                         persuader_name_by_gender: Optional[str] = None,
+                         debater_name_by_gender: Optional[str] = None,
+                         gender_case: str = None) -> Dict:
     """Sets up and runs a single debate instance, handling errors."""
     topic_id = "N/A"
     run_result = {}
@@ -122,7 +185,13 @@ def _run_single_debate(index: int,
             raise ValueError("Failed to generate a valid chat_id")
 
         # Format prompts for this claim (includes extracting topic_id, claim_text)
-        formatted_prompts, topic_id, claim_text = format_prompts_for_claim(debate_settings, claim_data, prompt_templates)
+        formatted_prompts, topic_id, claim_text = format_prompts_for_claim(
+            debate_settings, 
+            claim_data, 
+            prompt_templates,
+            persuader_name_by_gender=persuader_name_by_gender,
+            debater_name_by_gender=debater_name_by_gender
+        )
 
         # Create directory structure for logs - do this early before anything can fail
         chat_dir = create_debate_directory(topic_id, chat_id, helper_type, debates_base_dir)
@@ -202,7 +271,8 @@ def _run_single_debate(index: int,
             feedback_tags,
             argument_quality_rates,
             debate_quality_rating,
-            debate_quality_review
+            debate_quality_review,
+            gender_case=gender_case
         )
         if excel_success:
             logger.info(f"Successfully saved debate summary to Excel", extra={"msg_type": "system"})
@@ -278,6 +348,17 @@ def main():
 
     args = define_arguments()
     
+    # Determine names based on gender flags (None if not specified)
+    if args.persuader_gender:
+        persuader_name_by_gender = "Josh" if args.persuader_gender.upper() == "M" else "Karen"
+    else:
+        persuader_name_by_gender = None
+    
+    if args.debater_gender:
+        debater_name_by_gender = "Mike" if args.debater_gender.upper() == "M" else "Laura"
+    else:
+        debater_name_by_gender = None
+    
     _setup_api_keys()
 
     try:
@@ -287,6 +368,13 @@ def main():
             settings_path=args.settings_path,
             models_path=args.models_path,
             run_config_name=args.helper_type
+        )
+        
+        # Select prompts based on gender flags (choose between gender-aware and legacy)
+        prompt_templates = select_prompts_by_gender(
+            prompt_templates,
+            persuader_gender=args.persuader_gender,
+            debater_gender=args.debater_gender
         )
         print("Configuration loaded successfully.")
         print(f"Loading configuration for run: '{args.helper_type}'...")
@@ -314,6 +402,9 @@ def main():
         # Get helper type from the resolved config
         helper_type = agent_config['helper_type']
 
+        # Calculate gender_case for logging (e.g., "F_None", "M_M", etc.)
+        gender_case = f"{args.persuader_gender or 'None'}_{args.debater_gender or 'None'}"
+        
         # --- Run Debates Loop --- 
         # results_summary = []
         for index in tqdm(claim_indices_to_run, total=len(claim_indices_to_run), desc="Running Debates"):
@@ -325,7 +416,10 @@ def main():
                 agent_config=agent_config,
                 prompt_templates=prompt_templates,
                 helper_type=helper_type,
-                debates_base_dir=args.debates_dir
+                debates_base_dir=args.debates_dir,
+                persuader_name_by_gender=persuader_name_by_gender,
+                debater_name_by_gender=debater_name_by_gender,
+                gender_case=gender_case
             )
             # results_summary.append(run_result)
 

@@ -13,9 +13,14 @@ debate_settings:
     persuader_system: ./prompts/persuader/persuader_system_instruction.txt
     persuader_wrapper: ./prompts/persuader/persuader_prompt_wrapper.txt
     persuader_initial: ./prompts/persuader/initial_prompt.txt 
+    #### Persuader prompts for gender-specific settings
+    persuader_initial_gender: ./prompts/persuader/initial_prompt_gender.txt
+    persuader_system_gender: ./prompts/persuader/persuader_system_instruction_gender.txt
     # Debater prompts
     debater_system: ./prompts/debater/debater_system_instruction.txt
     debater_wrapper: ./prompts/debater/debater_prompt_wrapper.txt
+    #### Debater prompts for gender-specific settings
+    debater_system_gender: ./prompts/debater/debater_system_instruction_gender.txt
     # Moderator prompts
     moderator_terminator: ./prompts/moderator/moderator_terminator_instruction.txt
     moderator_topic: ./prompts/moderator/moderator_topic_instruction.txt
