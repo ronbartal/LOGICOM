@@ -142,7 +142,7 @@ def _run_single_debate(index: int,
             debate_settings, 
             claim_data, 
             prompt_templates,
-            name_by_gender=persuader_name_by_gender,
+            persuader_name_by_gender=persuader_name_by_gender,
             debater_name_by_gender=debater_name_by_gender
         )
 
