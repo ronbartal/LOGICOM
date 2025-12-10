@@ -57,7 +57,7 @@ agent_configurations:
       model_config_override: {}
 
     debater:
-      model_name: gpt41_nano 
+      model_name: gpt35_turbo 
       model_config_override: {}
 
     moderator:
@@ -82,7 +82,7 @@ agent_configurations:
       helper_model_config_override: {} 
 
     debater:
-      model_name: gpt41_nano 
+      model_name: gpt35_turbo 
       model_config_override: {}
 
     moderator:
@@ -108,7 +108,7 @@ agent_configurations:
       helper_model_config_override: {} 
 
     debater:
-      model_name: gpt41_nano 
+      model_name: gpt35_turbo 
       model_config_override: {}
 
     moderator:

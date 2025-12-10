@@ -61,7 +61,7 @@ agent_configurations:
       model_config_override: {}
 
     moderator:
-      model_name: o4_mini
+      model_name: gpt41_mini
       model_config_override: {}
     
     moderator_argument_quality:
@@ -86,7 +86,7 @@ agent_configurations:
       model_config_override: {}
 
     moderator:
-      model_name: o4_mini
+      model_name: gpt41_mini
       model_config_override: {}
     
     moderator_argument_quality:
@@ -112,7 +112,7 @@ agent_configurations:
       model_config_override: {}
 
     moderator:
-      model_name: o4_mini
+      model_name: gpt41_mini
       model_config_override: {}
     
     moderator_argument_quality:
