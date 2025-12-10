@@ -112,7 +112,9 @@ class DebateOrchestrator:
                     final_result_status = "Inconclusive"
 
         # Handle max rounds reached
-        if round_number >= self.max_rounds:
+        # Only set "Not convinced" if status wasn't already set to "Convinced"
+        # If status is "Inconclusive" after max rounds, it's OK to change to "Not convinced"
+        if round_number >= self.max_rounds and final_result_status != "Convinced":
             final_result_status = "Not convinced"
             finish_reason = "Max rounds reached"
             logger.debug(f"Debate ended: Reached max rounds ({self.max_rounds})." , extra={"msg_type": "main debate"})
