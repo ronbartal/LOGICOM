@@ -146,6 +146,10 @@ class HuggingFaceClient(LLMInterface):
                     logger.error(f"Fallback prompt formatting also failed: {fallback_e}", exc_info=True)
                     # Raise the original template error if fallback fails
                     raise e from fallback_e
+            else:
+                # Re-raise the template error if it's not a system role issue or we can't use fallback
+                logger.error(f"Template error is not recoverable (not a system role issue or no system prompt to prepend): {e}", exc_info=True)
+                raise
 
     def generate(self, prompt: List[Dict[str, str]], **kwargs) -> str:
         """Generates a response using the loaded Hugging Face model."""
