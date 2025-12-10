@@ -122,22 +122,23 @@ def analyze_conviction_progression(df):
         helper_df = df[df['helper_type'] == helper_type]
         
         # Get all conviction rate vectors (exclude debates with no conviction data)
+        # Filter out None values (and -1 for backward compatibility with old data)
         conviction_vectors = [
             rates for rates in helper_df['conviction_rates'] 
-            if rates and len(rates) > 0 and any(r != -1 for r in rates)
+            if rates and len(rates) > 0 and any(r is not None and r != -1 for r in rates)
         ]
         
         if not conviction_vectors:
             continue
         
-        # Calculate stats
-        initial_rates = [v[0] for v in conviction_vectors if v[0] != -1]
-        final_rates = [v[-1] for v in conviction_vectors if v[-1] != -1]
+        # Calculate stats (exclude None and -1 for backward compatibility)
+        initial_rates = [v[0] for v in conviction_vectors if v[0] is not None and v[0] != -1]
+        final_rates = [v[-1] for v in conviction_vectors if v[-1] is not None and v[-1] != -1]
         
         # Calculate average change
         changes = [
             v[-1] - v[0] for v in conviction_vectors 
-            if v[0] != -1 and v[-1] != -1
+            if v[0] is not None and v[0] != -1 and v[-1] is not None and v[-1] != -1
         ]
         
         stats.append({
@@ -375,10 +376,10 @@ def plot_conviction_progression(df, output_dir):
             # Filter by helper type and outcome
             helper_outcome_df = df[(df['helper_type'] == helper_type) & (df['result'] == result_code)]
             
-            # Get conviction rate vectors
+            # Get conviction rate vectors (exclude None and -1 for backward compatibility)
             conviction_vectors = [
                 rates for rates in helper_outcome_df['conviction_rates'] 
-                if rates and len(rates) > 0 and any(r != -1 for r in rates)
+                if rates and len(rates) > 0 and any(r is not None and r != -1 for r in rates)
             ]
             
             if not conviction_vectors:
@@ -394,7 +395,7 @@ def plot_conviction_progression(df, output_dir):
             for round_idx in range(max_rounds):
                 rates_at_round = [
                     v[round_idx] for v in conviction_vectors 
-                    if round_idx < len(v) and v[round_idx] != -1
+                    if round_idx < len(v) and v[round_idx] is not None and v[round_idx] != -1
                 ]
                 if rates_at_round:
                     avg_rates.append(np.mean(rates_at_round))

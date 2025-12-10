@@ -293,8 +293,7 @@ class DebateOrchestrator:
         logger.debug(f"Conviction moderator raw response: '{conviction_result}'",
                    extra={"msg_type": "main debate", "sender": "moderator"})
         
-        # i DONT LIKE THIS IMPLEMENTATION
-        conviction_rate = -1
+        conviction_rate = None
         try:
             import re
             # Try multiple patterns in order of specificity
@@ -311,9 +310,9 @@ class DebateOrchestrator:
                 conviction_rate = int(rate_match.group(1))
                 # Validate range 1-10
                 if conviction_rate < 1 or conviction_rate > 10:
-                    logger.warning(f"Conviction rate {conviction_rate} out of range 1-10, using -1",
+                    logger.warning(f"Conviction rate {conviction_rate} out of range 1-10, using None",
                                  extra={"msg_type": "main debate", "sender": "moderator"})
-                    conviction_rate = -1
+                    conviction_rate = None
         except Exception as e:
             logger.warning(f"Could not parse conviction rate from '{conviction_result}': {e}", 
                          extra={"msg_type": "main debate", "sender": "moderator"})
