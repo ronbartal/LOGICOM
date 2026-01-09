@@ -1,6 +1,6 @@
 """
 Test script to run debates with all gender combinations.
-Runs 4*n*k debates: k debates for each of the 5 gender combinations (M,M), (M,F), (F,M), (F,F), legacy - no gender awerness
+Runs 4*n*k debates: k debates for each of the 5 gender combinations (M,M), (M,F), (F,M), (F,F), legacy - no gender awareness
 for each of n claims (indices 0 to n-1).
 """
 import sys
