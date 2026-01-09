@@ -46,11 +46,11 @@ agent_configurations:
 
     persuader:
       # Reference to LLM config in models.yaml
-      model_name: gpt41
+      model_name: gpt35_turbo
       model_config_override: {}
 
     debater:
-      model_name: gpt41 
+      model_name: gpt41_nano 
       model_config_override: {}
 
     moderator:
@@ -67,15 +67,15 @@ agent_configurations:
 
     persuader:
       # Reference to LLM config in models.yaml
-      model_name: gpt41
+      model_name: gpt35_turbo
       model_config_override: {}
 
       # Helper Config 
-      helper_model_name: gpt41
+      helper_model_name: gpt35_turbo
       helper_model_config_override: {} 
 
     debater:
-      model_name: gpt41
+      model_name: gpt41_nano 
       model_config_override: {}
 
     moderator:
@@ -93,15 +93,15 @@ agent_configurations:
 
     persuader:
       # Reference to LLM config in models.yaml
-      model_name: gpt41
+      model_name: gpt35_turbo
       model_config_override: {}
 
       # Helper Config 
-      helper_model_name: gpt41
+      helper_model_name: gpt35_turbo 
       helper_model_config_override: {} 
 
     debater:
-      model_name: gpt41
+      model_name: gpt41_nano 
       model_config_override: {}
 
     moderator:

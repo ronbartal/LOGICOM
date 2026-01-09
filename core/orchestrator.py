@@ -112,7 +112,9 @@ class DebateOrchestrator:
                     final_result_status = "Inconclusive"
 
         # Handle max rounds reached
-        if round_number >= self.max_rounds:
+        # Only set "Not convinced" if status wasn't already set to "Convinced"
+        # If status is "Inconclusive" after max rounds, it's OK to change to "Not convinced"
+        if round_number >= self.max_rounds and final_result_status != "Convinced":
             final_result_status = "Not convinced"
             finish_reason = "Max rounds reached"
             logger.debug(f"Debate ended: Reached max rounds ({self.max_rounds})." , extra={"msg_type": "main debate"})
@@ -291,8 +293,7 @@ class DebateOrchestrator:
         logger.debug(f"Conviction moderator raw response: '{conviction_result}'",
                    extra={"msg_type": "main debate", "sender": "moderator"})
         
-        # i DONT LIKE THIS IMPLEMENTATION
-        conviction_rate = -1
+        conviction_rate = None
         try:
             import re
             # Try multiple patterns in order of specificity
@@ -309,9 +310,9 @@ class DebateOrchestrator:
                 conviction_rate = int(rate_match.group(1))
                 # Validate range 1-10
                 if conviction_rate < 1 or conviction_rate > 10:
-                    logger.warning(f"Conviction rate {conviction_rate} out of range 1-10, using -1",
+                    logger.warning(f"Conviction rate {conviction_rate} out of range 1-10, using None",
                                  extra={"msg_type": "main debate", "sender": "moderator"})
-                    conviction_rate = -1
+                    conviction_rate = None
         except Exception as e:
             logger.warning(f"Could not parse conviction rate from '{conviction_result}': {e}", 
                          extra={"msg_type": "main debate", "sender": "moderator"})
@@ -533,7 +534,12 @@ class DebateOrchestrator:
         argument_quality_rates = self.persuader.memory.get_argument_quality_rates()
         
         # Run debate quality moderator to get overall debate rating and review
-        debate_quality_rating, debate_quality_review = self._run_debate_quality_check(topic_id, claim, chat_id, helper_type, log_config)
+        # Only run if there is more than one round to the debate
+        if round_number > 1:
+            debate_quality_rating, debate_quality_review = self._run_debate_quality_check(topic_id, claim, chat_id, helper_type, log_config)
+        else:
+            debate_quality_rating = -1
+            debate_quality_review = "Debate quality check skipped: only one round completed"
         
         # Log debate end with all metadata needed for HTML/XLSX generation, including token usage, feedback tags, conviction rates, argument quality rates, and debate quality
         logger.info(f"Debate ended with result: {final_result_status} !!!!", 

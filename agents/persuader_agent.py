@@ -127,12 +127,13 @@ class PersuaderAgent(BaseAgent):
         # Return only the final response string
         return final_response_to_send
 
-    def _get_helper_refinement(self, persuader_response: str) -> Tuple[str, str]: #TODO: Check if more logging needed
+    def _get_helper_refinement(self, persuader_response: str) -> Tuple[str, Optional[str]]: #TODO: Check if more logging needed
         """
         Calls the helper LLM, parses the JSON response, and returns the refined response and feedback tag.
         
         Returns:
-            A tuple of (refined_response, feedback_tag)
+            A tuple of (refined_response, feedback_tag). 
+            If JSON parsing fails, returns (original_response, None) as fallback.
         """
         if not self.helper_llm_client or not self._helper_template_content: 
             raise RuntimeError("Helper LLM client or prompt template content not properly initialized.")
@@ -192,16 +193,24 @@ class PersuaderAgent(BaseAgent):
             if cleaned_feedback.endswith("```"):
                 cleaned_feedback = cleaned_feedback[:-3].strip()
         
-        refinement_dict = json.loads(cleaned_feedback)
-        
-        # Validate required keys based on system prompt instruction
-        required_keys = ["response", "feedback_tag"]
-        if not isinstance(refinement_dict, dict) or not all(key in refinement_dict for key in required_keys):
-            raise ValueError(f"Parsed JSON structure is invalid or missing keys: {required_keys}")
+        try:
+            refinement_dict = json.loads(cleaned_feedback)
+            
+            # Validate required keys based on system prompt instruction
+            required_keys = ["response", "feedback_tag"]
+            if not isinstance(refinement_dict, dict) or not all(key in refinement_dict for key in required_keys):
+                raise ValueError(f"Parsed JSON structure is invalid or missing keys: {required_keys}")
 
-        # Extract needed values
-        refined_response = str(refinement_dict["response"])
-        feedback_tag_str = str(refinement_dict["feedback_tag"])
+            # Extract needed values
+            refined_response = str(refinement_dict["response"])
+            feedback_tag_str = str(refinement_dict["feedback_tag"])
+            
+        except (json.JSONDecodeError, ValueError) as e:
+            # Fallback: If helper fails to return valid JSON, use original response
+            logger.warning(f"Helper LLM returned malformed JSON or invalid structure. Using original response as fallback. Error: {e}. Raw feedback: {raw_feedback[:200]}...", 
+                         extra={"msg_type": "helper_operation", "agent_name": self.agent_name, "operation": "fallback"})
+            refined_response = persuader_response
+            feedback_tag_str = None
 
         # Log the final parsed result
         logger.debug(f"Helper parsed JSON - Response: {refined_response}", 
