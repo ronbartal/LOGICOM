@@ -17,6 +17,9 @@ from utils.log_main import logger
 
 # TODO: add sides to moderator history, saying who's the debater and who's the persuader, add this in the orchestrator
 
+# Constants
+MAX_CONSECUTIVE_MODERATION_FAILURES = 2  # Number of consecutive moderation failures before debate ends as Inconclusive
+
 class DebateOrchestrator:
     """Orchestrates the debate, managing agent turns and moderation checks."""
 
@@ -61,7 +64,7 @@ class DebateOrchestrator:
         self._initialize_debate(topic_id, helper_type, chat_id)
         
         # Initialize state
-        keep_talking = True
+        keep_talking = MAX_CONSECUTIVE_MODERATION_FAILURES  # Decrements on each moderation failure
         round_number = 0
         final_result_status = None
         finish_reason = None
@@ -102,13 +105,18 @@ class DebateOrchestrator:
 
 
 
-            keep_talking, finish_reason = self._run_moderation_checks(
+            last_round_keep_talking, finish_reason = self._run_moderation_checks(
                 persuader_memory=self.persuader.memory, #TODO: memory shouldnt be accessed from orchastrator
                 debater_memory=self.debater.memory
             )
             
+            if last_round_keep_talking:
+                keep_talking = MAX_CONSECUTIVE_MODERATION_FAILURES  # Reset counter on successful moderation
+            else:
+                keep_talking -= 1
+            
             # Set result status based on status tag if debate should end
-            if not keep_talking:
+            if keep_talking == 0:
                     final_result_status = "Inconclusive"
 
         # Handle max rounds reached
