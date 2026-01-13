@@ -48,7 +48,8 @@ def create_debate_directory(topic_id, chat_id, helper_type, debates_base_dir="de
 
 def save_debate_in_excel(topic_id, claim_data, helper_type, chat_id, result, rounds, finish_reason="", 
                          conviction_rates=None, feedback_tags=None, argument_quality_rates=None,
-                         debate_quality_rating=None, debate_quality_review=None, gender_case=None):
+                         debate_quality_rating=None, debate_quality_review=None, gender_case=None,
+                         ground_truth_conviction_round=None):
     """
     Save debate results to a central Excel file.
     Creates the file if it doesn't exist, otherwise appends to it.
@@ -67,6 +68,7 @@ def save_debate_in_excel(topic_id, claim_data, helper_type, chat_id, result, rou
         debate_quality_rating: Overall debate quality rating 1-10 (optional)
         debate_quality_review: Professional review of debate quality (optional)
         gender_case: Gender combination case (e.g., "M_M", "M_F", "F_M", "F_F") (optional)
+        ground_truth_conviction_round: Round number when ground truth conviction occurred (optional)
         
     Returns:
         bool: True if successful, False otherwise
@@ -105,7 +107,8 @@ def save_debate_in_excel(topic_id, claim_data, helper_type, chat_id, result, rou
                 'debate_quality_rating': debate_quality_rating,
                 'debate_quality_review': debate_quality_review or '',
                 'chat_id': chat_id,
-                'gender_case': gender_case or ''
+                'gender_case': gender_case or '',
+                'ground_truth_conviction_round': ground_truth_conviction_round if ground_truth_conviction_round is not None else ''
             }
             
             # Check if the file already exists

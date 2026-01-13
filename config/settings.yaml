@@ -59,12 +59,12 @@ agent_configurations:
       model_config_override: {}
 
     moderator:
-      model_name: gpt35_turbo
+      model_name: gpt4o_judge
       model_config_override: {}
     
     moderator_argument_quality:
       model_name: gpt35_turbo
-      model_config_override: {}
+      model_config_override: {temperature: 0.5}
 
   # --- Default with Fallacy Helper Enabled --- 
   Default_Fallacy_Helper:
@@ -84,12 +84,12 @@ agent_configurations:
       model_config_override: {}
 
     moderator:
-      model_name: gpt35_turbo
+      model_name: gpt4o_judge
       model_config_override: {}
     
     moderator_argument_quality:
       model_name: gpt35_turbo
-      model_config_override: {}
+      model_config_override: {temperature: 0.5}
 
   # --- Default with Vanilla Helper Enabled --- 
   
@@ -110,12 +110,12 @@ agent_configurations:
       model_config_override: {}
 
     moderator:
-      model_name: gpt35_turbo
+      model_name: gpt4o_judge
       model_config_override: {}
     
     moderator_argument_quality:
-      model_name: gpt35_turbo
-      model_config_override: {}
+      model_name: gpt4o_judge
+      model_config_override: {temperature: 0.5}
 
   # --- Example Configuration using Local Gemma --- 
   Local_Gemma_Test:

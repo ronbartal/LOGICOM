@@ -19,6 +19,9 @@ class DebaterAgent(BaseAgent):
         # Pass relevant args to BaseAgent, including wrapper path, main LLM client and memory
         super().__init__(llm_client=llm_client, memory=memory, agent_name=agent_name,
                          model_config=model_config, prompt_wrapper=prompt_wrapper)
+        
+        # Track ground truth conviction status (set by call() method)
+        self.last_ground_truth_convinced: Optional[bool] = None
 
 
     def call(self, opponent_message: str) -> str:
@@ -39,19 +42,32 @@ class DebaterAgent(BaseAgent):
         logger.debug(f"Debater applied prompt wrapper to history: {final_prompt_to_send}", 
                    extra={"msg_type": "prompt_operation", "operation": "apply wrapper", "agent_name": self.agent_name})# TODO:: check_log to see if agent name here is important
 
-        response_content = self._generate_response(final_prompt_to_send)
-        logger.debug(f"Debater generated response from LLM: {response_content}", 
+        raw_response = self._generate_response(final_prompt_to_send)
+        logger.debug(f"Debater generated response from LLM: {raw_response}", 
                    extra={"msg_type": "llm_operation", "operation": "generate response", "agent_name": self.agent_name})
         
-        # Add response to memory with prompt/response metadata
+        # Extract secret signal and sanitize response
+        SECRET_SIGNAL = "[#$#]"
+        ground_truth_convinced = SECRET_SIGNAL in raw_response
+        clean_response = raw_response.replace(SECRET_SIGNAL, "").strip()
+        
+        # Store ground truth conviction status for orchestrator to retrieve
+        self.last_ground_truth_convinced = ground_truth_convinced
+        
+        # Log ground truth conviction status
+        if ground_truth_convinced:
+            logger.info(f"Debater ground truth: CONVINCED (secret signal detected)", 
+                       extra={"msg_type": "main debate", "sender": "debater", "ground_truth_convinced": True})
+        
+        # Add ONLY the clean response to memory (signal must never enter history)
         log_metadata = {
              "prompt_sent": final_prompt_to_send,
-             "raw_response": response_content
+             "raw_response": raw_response  # Store raw in metadata for debugging, but clean in content
         }
-        self.memory.add_ai_message(response_content, **log_metadata)
-        logger.info("Debater added his own response to memory", 
-                   extra={"msg_type": "memory_operation", "operation": "write", "agent_name": self.agent_name, "agent_name": self.agent_name})
-        logger.info(f"Debater response: {response_content}", 
+        self.memory.add_ai_message(clean_response, **log_metadata)
+        logger.info("Debater added his own response to memory (sanitized)", 
+                   extra={"msg_type": "memory_operation", "operation": "write", "agent_name": self.agent_name})
+        logger.info(f"Debater response: {clean_response}", 
                    extra={"msg_type": "main debate", "sender": "debater", "receiver": "persuador"})
-        return response_content
+        return clean_response
 
