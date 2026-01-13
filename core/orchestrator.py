@@ -70,6 +70,7 @@ class DebateOrchestrator:
         finish_reason = None
         current_persuader_response = ""
         debater_response = ""
+        ground_truth_conviction_round = None  # Track the round number when ground truth conviction occurs
 
         # --- Main Debate Loop --- 
         while keep_talking and round_number < self.max_rounds:
@@ -82,6 +83,9 @@ class DebateOrchestrator:
 
             # Run Debater's turn
             debater_response = self._run_debater_turn(current_persuader_response)
+            
+            # Get ground truth conviction status from debater (secret signal extraction)
+            ground_truth_convinced = getattr(self.debater, 'last_ground_truth_convinced', None)
             
             # Check argument quality
             argument_quality_rate = self._run_argument_quality_check(persuader_memory=self.persuader.memory, debater_memory=self.debater.memory)
@@ -96,6 +100,33 @@ class DebateOrchestrator:
             # Update the conviction rate for the debater's most recent message - TODO:: decide if save it differently
             if hasattr(self.debater.memory, 'conviction_rates') and len(self.debater.memory.conviction_rates) > 0:
                 self.debater.memory.conviction_rates[-1] = conviction_rate
+            
+            # Track ground truth conviction round number
+            if ground_truth_convinced is not None and ground_truth_convinced:
+                if ground_truth_conviction_round is None:  # Only record the first occurrence
+                    ground_truth_conviction_round = round_number
+                    logger.info(f"Ground truth conviction detected at round {round_number}",
+                               extra={"msg_type": "main debate", "sender": "orchestrator",
+                                      "ground_truth_conviction_round": round_number})
+            
+            # Discrepancy check: Compare ground truth conviction vs moderator's assessment
+            if ground_truth_convinced is not None:
+                if ground_truth_convinced != is_convinced:
+                    logger.warning(
+                        f"DISCREPANCY DETECTED: Ground truth conviction ({ground_truth_convinced}) != Moderator assessment ({is_convinced}). "
+                        f"Ground truth: {'CONVINCED' if ground_truth_convinced else 'NOT CONVINCED'}, "
+                        f"Moderator: {'CONVINCED' if is_convinced else 'NOT CONVINCED'}",
+                        extra={"msg_type": "main debate", "sender": "orchestrator", 
+                               "ground_truth_convinced": ground_truth_convinced,
+                               "moderator_convinced": is_convinced,
+                               "discrepancy": True})
+                else:
+                    logger.debug(
+                        f"Agreement: Ground truth conviction ({ground_truth_convinced}) matches Moderator assessment ({is_convinced})",
+                        extra={"msg_type": "main debate", "sender": "orchestrator",
+                               "ground_truth_convinced": ground_truth_convinced,
+                               "moderator_convinced": is_convinced,
+                               "discrepancy": False})
 
 
             if is_convinced:
@@ -136,7 +167,8 @@ class DebateOrchestrator:
             final_result_status=final_result_status,
             finish_reason=finish_reason,
             log_config=log_config,
-            helper_type=helper_type
+            helper_type=helper_type,
+            ground_truth_conviction_round=ground_truth_conviction_round
         )
 
     def _initialize_debate(self, topic_id: str, helper_type: str, chat_id: str = None) -> str:
@@ -287,6 +319,20 @@ class DebateOrchestrator:
         """
         # Get recent history for conviction check - focus on the last few exchanges
         recent_history = self._get_recent_history(debater_memory, count=4)  # Last 2 exchanges
+        
+        # Verify that secret signal is NOT present in history sent to moderator
+        SECRET_SIGNAL = "[#$#]"
+        history_text = str(recent_history)
+        if SECRET_SIGNAL in history_text:
+            logger.error(
+                f"CRITICAL: Secret signal detected in moderator history! This should never happen. "
+                f"Signal must be sanitized before adding to memory.",
+                extra={"msg_type": "main debate", "sender": "orchestrator"})
+        else:
+            logger.debug(
+                f"Verification passed: Secret signal not found in moderator history (as expected)",
+                extra={"msg_type": "main debate", "sender": "orchestrator"})
+        
         moderator_logs = []
         
         conviction_result = self.moderator_conviction.call(recent_history)
@@ -527,7 +573,7 @@ class DebateOrchestrator:
 
     def _finalize_debate(self, topic_id: str, chat_id: str, claim: str, round_number: int, 
                         final_result_status: str, finish_reason: str, log_config: Dict[str, Any], 
-                        helper_type: str) -> Dict[str, Any]:
+                        helper_type: str, ground_truth_conviction_round: Optional[int] = None) -> Dict[str, Any]:
         """Finalize the debate by saving logs and preparing results."""
         # Calculate token usage
         token_usage = self._calculate_token_usage()
@@ -574,7 +620,8 @@ class DebateOrchestrator:
             "conviction_rates": conviction_rates,
             "argument_quality_rates": argument_quality_rates,
             "debate_quality_rating": debate_quality_rating,
-            "debate_quality_review": debate_quality_review
+            "debate_quality_review": debate_quality_review,
+            "ground_truth_conviction_round": ground_truth_conviction_round
         }
     #TODO, make the agents independent of the orchestrator
     def _calculate_token_usage(self) -> int:

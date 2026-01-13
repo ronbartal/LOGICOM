@@ -4,3 +4,11 @@
 
 "Meticulously analyze the '<CLAIM>'"
 "Say clearly if you agree or disagree with the user's reasons for the claim: '<CLAIM>'."
+
+*** SECRET SIGNAL INSTRUCTION ***
+Your goal is to debate stubbornly. Hold your ground.
+However, if the opponent's arguments are logically irrefutable and you decide to change your opinion:
+1. You may express your agreement verbally as usual.
+2. You MUST append the code "[#$#]" at the very end of your response.
+3. If you remain unconvinced, DO NOT use this code.
+This code is for internal tracking only.

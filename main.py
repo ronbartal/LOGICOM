@@ -254,6 +254,7 @@ def _run_single_debate(index: int,
         argument_quality_rates = run_result_data.get('argument_quality_rates', [])
         debate_quality_rating = run_result_data.get('debate_quality_rating')
         debate_quality_review = run_result_data.get('debate_quality_review', '')
+        ground_truth_conviction_round = run_result_data.get('ground_truth_conviction_round')
         
         # Save debate summary to Excel (with round details)
         rounds = run_result_data.get('rounds', 0)
@@ -270,7 +271,8 @@ def _run_single_debate(index: int,
             argument_quality_rates,
             debate_quality_rating,
             debate_quality_review,
-            gender_case=gender_case
+            gender_case=gender_case,
+            ground_truth_conviction_round=ground_truth_conviction_round
         )
         if excel_success:
             logger.info(f"Successfully saved debate summary to Excel", extra={"msg_type": "system"})
