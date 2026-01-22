@@ -38,7 +38,10 @@ print("SECTION 1: DATA LOADING AND INITIAL EXPLORATION")
 print("=" * 80)
 
 # Load the data
-df = pd.read_excel('/home/runner/work/LOGICOM/LOGICOM/all_debates_summary.xlsx', sheet_name='Summary')
+import os
+script_dir = os.path.dirname(os.path.abspath(__file__))
+data_path = os.path.join(script_dir, 'all_debates_summary.xlsx')
+df = pd.read_excel(data_path, sheet_name='Summary')
 
 print(f"\n✓ Loaded data: {df.shape[0]} debates, {df.shape[1]} columns")
 print(f"\nColumns: {df.columns.tolist()}")
@@ -368,8 +371,9 @@ else:
     ax.axis('off')
 
 plt.tight_layout()
-plt.savefig('/home/runner/work/LOGICOM/LOGICOM/improved_visualizations.png', dpi=300, bbox_inches='tight')
-print("\n✓ Saved improved visualizations to 'improved_visualizations.png'")
+output_path = os.path.join(script_dir, 'improved_visualizations.png')
+plt.savefig(output_path, dpi=300, bbox_inches='tight')
+print(f"\n✓ Saved improved visualizations to '{output_path}'")
 plt.close()
 
 # ==============================================================================
