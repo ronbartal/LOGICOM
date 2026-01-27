@@ -76,7 +76,9 @@ def format_prompts_for_claim(debate_settings: Dict[str, Any],
                                claim_data: pd.Series, 
                                loaded_prompts: Dict[str, str],
                                persuader_name_by_gender: Optional[str] = None,
-                               debater_name_by_gender: Optional[str] = None) -> Tuple[Dict[str, str], str, str]:
+                               debater_name_by_gender: Optional[str] = None,
+                               persuader_gender_label: Optional[str] = None,
+                               debater_gender_label: Optional[str] = None) -> Tuple[Dict[str, str], str, str]:
     """Formats all loaded prompts using data from the current claim row.
 
     Raises:
@@ -108,7 +110,9 @@ def format_prompts_for_claim(debate_settings: Dict[str, Any],
         "TOPIC": topic_text,
         "REASON": reason_text,
         "PERSUADER_NAME_BY_GENDER": persuader_name_by_gender if persuader_name_by_gender else "WARNING! SHOULDN'T BE HERE!",
-        "DEBATER_NAME_BY_GENDER": debater_name_by_gender if debater_name_by_gender else "WARNING! SHOULDN'T BE HERE!"
+        "DEBATER_NAME_BY_GENDER": debater_name_by_gender if debater_name_by_gender else "WARNING! SHOULDN'T BE HERE!",
+        "PERSUADER_GENDER_LABEL": persuader_gender_label if persuader_gender_label is not None else "",
+        "DEBATER_GENDER_LABEL": debater_gender_label if debater_gender_label is not None else ""
     }
 
     # Debugging: Log the keys available right before formatting
@@ -150,14 +154,14 @@ def define_arguments() -> argparse.Namespace:
                         help="Directory where debate logs should be saved (default: debates)")
     parser.add_argument("--persuader_gender",
                         dest="persuader_gender",
-                        choices=["M", "F"],
+                        choices=["M", "F", "N"],
                         default=None,
-                        help="Gender for persuader name substitution (M=Josh, F=Karen). If not specified, uses legacy prompts without gender/naming.")
+                        help="Gender for persuader name substitution (M=Josh, F=Karen, N=Casey). If not specified, uses legacy prompts without gender/naming.")
     parser.add_argument("--debater_gender",
                         dest="debater_gender",
-                        choices=["M", "F"],
+                        choices=["M", "F", "N"],
                         default=None,
-                        help="Gender for debater name substitution (M=Mike, F=Laura). If not specified, uses legacy prompts without gender/naming.")
+                        help="Gender for debater name substitution (M=Mike, F=Laura, N=Riley). If not specified, uses legacy prompts without gender/naming.")
     args = parser.parse_args()
     return args
 
@@ -171,6 +175,8 @@ def _run_single_debate(index: int,
                          debates_base_dir: str = "debates",
                          persuader_name_by_gender: Optional[str] = None,
                          debater_name_by_gender: Optional[str] = None,
+                         persuader_gender_label: Optional[str] = None,
+                         debater_gender_label: Optional[str] = None,
                          gender_case: str = None) -> Dict:
     """Sets up and runs a single debate instance, handling errors."""
     topic_id = "N/A"
@@ -188,7 +194,9 @@ def _run_single_debate(index: int,
             claim_data, 
             prompt_templates,
             persuader_name_by_gender=persuader_name_by_gender,
-            debater_name_by_gender=debater_name_by_gender
+            debater_name_by_gender=debater_name_by_gender,
+            persuader_gender_label=persuader_gender_label,
+            debater_gender_label=debater_gender_label
         )
 
         # Create directory structure for logs - do this early before anything can fail
@@ -348,16 +356,33 @@ def main():
 
     args = define_arguments()
     
-    # Determine names based on gender flags (None if not specified)
-    if args.persuader_gender:
-        persuader_name_by_gender = "Josh" if args.persuader_gender.upper() == "M" else "Karen"
+    # Persuader name and gender label
+    if args.persuader_gender == "M":
+        persuader_name = "Josh"
+        persuader_gender_label = " male"
+    elif args.persuader_gender == "F":
+        persuader_name = "Karen"
+        persuader_gender_label = " female"
+    elif args.persuader_gender == "N":
+        persuader_name = "Casey"
+        persuader_gender_label = ""
     else:
-        persuader_name_by_gender = None
-    
-    if args.debater_gender:
-        debater_name_by_gender = "Mike" if args.debater_gender.upper() == "M" else "Laura"
+        persuader_name = None
+        persuader_gender_label = None
+
+    # Debater name and gender label  
+    if args.debater_gender == "M":
+        debater_name = "Mike"
+        debater_gender_label = " male"
+    elif args.debater_gender == "F":
+        debater_name = "Laura"
+        debater_gender_label = " female"
+    elif args.debater_gender == "N":
+        debater_name = "Riley"
+        debater_gender_label = ""
     else:
-        debater_name_by_gender = None
+        debater_name = None
+        debater_gender_label = None
     
     _setup_api_keys()
 
@@ -417,8 +442,10 @@ def main():
                 prompt_templates=prompt_templates,
                 helper_type=helper_type,
                 debates_base_dir=args.debates_dir,
-                persuader_name_by_gender=persuader_name_by_gender,
-                debater_name_by_gender=debater_name_by_gender,
+                persuader_name_by_gender=persuader_name,
+                debater_name_by_gender=debater_name,
+                persuader_gender_label=persuader_gender_label,
+                debater_gender_label=debater_gender_label,
                 gender_case=gender_case
             )
             # results_summary.append(run_result)
