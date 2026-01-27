@@ -69,10 +69,10 @@ def create_debate_directory(claim_text, chat_id, gender_case, topic_id, debates_
     # Sanitize claim text for filesystem use and append topic_id for uniqueness
     sanitized_claim = sanitize_claim_text_for_filesystem(claim_text)
     # Append topic_id to ensure uniqueness even if claims are similar or truncated
-    claim_dirname = f"{sanitized_claim} ({topic_id})"
+    claim_dirname = f"{sanitized_claim}_{topic_id}"
     
     # Create claim directory if it doesn't exist
-    claim_dir = os.path.join(debates_dir, claim_dirname) # Creates debates/sanitized_claim_topicid
+    claim_dir = os.path.join(debates_dir, claim_dirname)  # Creates debates/sanitized_claim_topicid
     if not os.path.exists(claim_dir):
         os.makedirs(claim_dir)
     
