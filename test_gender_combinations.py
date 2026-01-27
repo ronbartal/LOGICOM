@@ -1,6 +1,6 @@
 """
 Test script to run debates with all gender combinations.
-Runs 4*n*k debates: k debates for each of the 5 gender combinations (M,M), (M,F), (F,M), (F,F), legacy - no gender awareness
+Runs 6*n*k debates: k debates for each of the 6 gender combinations (M,M), (M,F), (F,M), (F,F), (N,N), legacy - no gender awareness
 for each of n claims (indices 0 to n-1).
 """
 import sys
@@ -72,7 +72,7 @@ def main():
             args.n = num_claims
         
         print(f"n={args.n} claims, k={args.k} debates per combination")
-        print(f"Total debates: {5 * args.n * args.k}")  # 5 combinations: M_M, M_F, F_M, F_F, None_None
+        print(f"Total debates: {6 * args.n * args.k}")  # 6 combinations: M_M, M_F, F_M, F_F, N_N, None_None
     
         
         # Override max_rounds if provided
@@ -82,21 +82,26 @@ def main():
         
         helper_type = agent_config['helper_type']
         
-        # Gender combinations: (persuader_gender, debater_gender)
+        # Gender combinations: (persuader_gender, debater_gender, gender_case_label)
         gender_combinations = [
             ("M", "M", "M_M"),
             ("M", "F", "M_F"),
             ("F", "M", "F_M"),
             ("F", "F", "F_F"),
+            ("N", "N", "Persona-baseline"),
             (None, None, "No-gender")
         ]
         
         # Name mappings
-        persuader_names = {"M": "Josh", "F": "Karen"}
-        debater_names = {"M": "Mike", "F": "Laura"}
+        persuader_names = {"M": "Josh", "F": "Karen", "N": "Casey"}
+        debater_names = {"M": "Mike", "F": "Laura", "N": "Jessie"}
+        
+        # Gender label mappings (with smart spacing)
+        persuader_gender_labels = {"M": " male", "F": " female", "N": ""}
+        debater_gender_labels = {"M": " male", "F": " female", "N": ""}
         
         # Total number of debates
-        total_debates = 5 * args.n * args.k
+        total_debates = 6 * args.n * args.k
         pbar = tqdm(total=total_debates, desc="Running Gender Tests")
         
         # Run debates for each claim index
@@ -112,16 +117,20 @@ def main():
                     debater_gender=debater_gender
                 )
                 
-                # Get names only if gender is specified (None for legacy mode)
+                # Get names and gender labels only if gender is specified (None for legacy mode)
                 if persuader_gender is not None:
                     persuader_name = persuader_names[persuader_gender]
+                    persuader_gender_label = persuader_gender_labels[persuader_gender]
                 else:
                     persuader_name = None
+                    persuader_gender_label = None
                 
                 if debater_gender is not None:
                     debater_name = debater_names[debater_gender]
+                    debater_gender_label = debater_gender_labels[debater_gender]
                 else:
                     debater_name = None
+                    debater_gender_label = None
                 
                 # Run k debates for this combination
                 for run_num in range(args.k):
@@ -136,6 +145,8 @@ def main():
                             debates_base_dir=args.debates_dir,
                             persuader_name_by_gender=persuader_name,
                             debater_name_by_gender=debater_name,
+                            persuader_gender_label=persuader_gender_label,
+                            debater_gender_label=debater_gender_label,
                             gender_case=gender_case
                         )
                         
