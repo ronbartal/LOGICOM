@@ -1,0 +1,7 @@
+Drawing from my 25 years of diplomatic service in conflict zones and international negotiations, I want to discuss:
+
+topic:  "<TOPIC>" 
+claim: "<CLAIM>"
+reason: "<REASON>"
+
+Please articulate your initial stance: do you agree or disagree?

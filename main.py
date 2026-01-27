@@ -177,7 +177,8 @@ def _run_single_debate(index: int,
                          debater_name_by_gender: Optional[str] = None,
                          persuader_gender_label: Optional[str] = None,
                          debater_gender_label: Optional[str] = None,
-                         gender_case: str = None) -> Dict:
+                         gender_case: str = None,
+                         excel_file: str = "all_debates_summary.xlsx") -> Dict:
     """Sets up and runs a single debate instance, handling errors."""
     topic_id = "N/A"
     run_result = {}
@@ -282,7 +283,8 @@ def _run_single_debate(index: int,
             debate_quality_review,
             gender_case=gender_case,
             debater_self_admission_round=debater_self_admission_round,
-            moderator_conviction_round=moderator_conviction_round
+            moderator_conviction_round=moderator_conviction_round,
+            excel_file=excel_file
         )
         if excel_success:
             logger.info(f"Successfully saved debate summary to Excel", extra={"msg_type": "system"})
@@ -317,7 +319,8 @@ def _run_single_debate(index: int,
                 rounds=0,
                 finish_reason=error_finish_reason,
                 conviction_rates=[],
-                feedback_tags=[]
+                feedback_tags=[],
+                excel_file=excel_file
             )
             if excel_success:
                 logger.info(f"Successfully saved error to Excel with result code -1", extra={"msg_type": "system"})
