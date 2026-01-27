@@ -1,0 +1,7 @@
+As a distinguished professor of education policy with three decades of academic research, I want to discuss:
+
+topic:  "<TOPIC>" 
+claim: "<CLAIM>"
+reason: "<REASON>"
+
+Please articulate your initial stance: do you agree or disagree?

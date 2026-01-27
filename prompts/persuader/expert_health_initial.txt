@@ -1,0 +1,7 @@
+As a Chief Medical Officer with extensive epidemiological expertise and decades of public health leadership, I want to discuss:
+
+topic:  "<TOPIC>" 
+claim: "<CLAIM>"
+reason: "<REASON>"
+
+Please articulate your initial stance: do you agree or disagree?
