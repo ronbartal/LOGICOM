@@ -20,8 +20,8 @@ class DebaterAgent(BaseAgent):
         super().__init__(llm_client=llm_client, memory=memory, agent_name=agent_name,
                          model_config=model_config, prompt_wrapper=prompt_wrapper)
         
-        # Track ground truth conviction status (set by call() method)
-        self.last_ground_truth_convinced: Optional[bool] = None
+        # Track debater self-admission status (set by call() method)
+        self.last_self_admitted: Optional[bool] = None
 
 
     def call(self, opponent_message: str) -> str:
@@ -48,16 +48,16 @@ class DebaterAgent(BaseAgent):
         
         # Extract secret signal and sanitize response
         SECRET_SIGNAL = "[#$#]"
-        ground_truth_convinced = SECRET_SIGNAL in raw_response
+        self_admitted = SECRET_SIGNAL in raw_response
         clean_response = raw_response.replace(SECRET_SIGNAL, "").strip()
         
-        # Store ground truth conviction status for orchestrator to retrieve
-        self.last_ground_truth_convinced = ground_truth_convinced
+        # Store debater self-admission status for orchestrator to retrieve
+        self.last_self_admitted = self_admitted
         
-        # Log ground truth conviction status
-        if ground_truth_convinced:
-            logger.info(f"Debater ground truth: CONVINCED (secret signal detected)", 
-                       extra={"msg_type": "main debate", "sender": "debater", "ground_truth_convinced": True})
+        # Log debater self-admission status
+        if self_admitted:
+            logger.debug(f"Debater self-admission: CONVINCED (secret signal detected)", 
+                       extra={"msg_type": "main debate", "sender": "debater", "debater_self_admitted": True})
         
         # Add ONLY the clean response to memory (signal must never enter history)
         log_metadata = {

@@ -70,7 +70,8 @@ class DebateOrchestrator:
         finish_reason = None
         current_persuader_response = ""
         debater_response = ""
-        ground_truth_conviction_round = None  # Track the round number when ground truth conviction occurs
+        debater_self_admission_round = None  # Track the round number when debater self-admission occurs
+        moderator_conviction_round = None  # Track the round number when moderator first detects conviction
 
         # --- Main Debate Loop --- 
         while keep_talking and round_number < self.max_rounds:
@@ -84,8 +85,8 @@ class DebateOrchestrator:
             # Run Debater's turn
             debater_response = self._run_debater_turn(current_persuader_response)
             
-            # Get ground truth conviction status from debater (secret signal extraction)
-            ground_truth_convinced = getattr(self.debater, 'last_ground_truth_convinced', None)
+            # Get debater self-admission status from debater (secret signal extraction)
+            debater_self_admitted = getattr(self.debater, 'last_self_admitted', None)
             
             # Check argument quality
             argument_quality_rate = self._run_argument_quality_check(persuader_memory=self.persuader.memory, debater_memory=self.debater.memory)
@@ -101,38 +102,61 @@ class DebateOrchestrator:
             if hasattr(self.debater.memory, 'conviction_rates') and len(self.debater.memory.conviction_rates) > 0:
                 self.debater.memory.conviction_rates[-1] = conviction_rate
             
-            # Track ground truth conviction round number
-            if ground_truth_convinced is not None and ground_truth_convinced:
-                if ground_truth_conviction_round is None:  # Only record the first occurrence
-                    ground_truth_conviction_round = round_number
-                    logger.info(f"Ground truth conviction detected at round {round_number}",
-                               extra={"msg_type": "main debate", "sender": "orchestrator",
-                                      "ground_truth_conviction_round": round_number})
+            # Track moderator conviction round number
+            if is_convinced and moderator_conviction_round is None:  # Only record the first occurrence
+                moderator_conviction_round = round_number
+                logger.info(f"Moderator conviction detected at round {round_number}",
+                           extra={"msg_type": "main debate", "sender": "orchestrator",
+                                  "moderator_conviction_round": round_number})
             
-            # Discrepancy check: Compare ground truth conviction vs moderator's assessment
-            if ground_truth_convinced is not None:
-                if ground_truth_convinced != is_convinced:
+            # Track debater self-admission round number
+            if debater_self_admitted is not None and debater_self_admitted:
+                if debater_self_admission_round is None:  # Only record the first occurrence
+                    debater_self_admission_round = round_number
+                    logger.info(f"Debater self-admission detected at round {round_number}",
+                               extra={"msg_type": "main debate", "sender": "orchestrator",
+                                      "debater_self_admission_round": round_number})
+            
+            # Discrepancy check: Compare debater self-admission vs moderator's assessment
+            # The debate will continue until BOTH parties signal conviction
+            if debater_self_admitted is not None:
+                if debater_self_admitted != is_convinced:
                     logger.warning(
-                        f"DISCREPANCY DETECTED: Ground truth conviction ({ground_truth_convinced}) != Moderator assessment ({is_convinced}). "
-                        f"Ground truth: {'CONVINCED' if ground_truth_convinced else 'NOT CONVINCED'}, "
-                        f"Moderator: {'CONVINCED' if is_convinced else 'NOT CONVINCED'}",
+                        f"DISCREPANCY DETECTED: Debater self-admission ({debater_self_admitted}) != Moderator assessment ({is_convinced}). "
+                        f"Debater self-admission: {'CONVINCED' if debater_self_admitted else 'NOT CONVINCED'}, "
+                        f"Moderator: {'CONVINCED' if is_convinced else 'NOT CONVINCED'}. "
+                        f"Debate will continue until both moderator and debater agree on conviction.",
                         extra={"msg_type": "main debate", "sender": "orchestrator", 
-                               "ground_truth_convinced": ground_truth_convinced,
+                               "debater_self_admitted": debater_self_admitted,
                                "moderator_convinced": is_convinced,
                                "discrepancy": True})
                 else:
                     logger.debug(
-                        f"Agreement: Ground truth conviction ({ground_truth_convinced}) matches Moderator assessment ({is_convinced})",
+                        f"Agreement: Debater self-admission ({debater_self_admitted}) matches Moderator assessment ({is_convinced}). "
+                        f"{'Debate will end if both agree on conviction.' if is_convinced and debater_self_admitted else 'Debate continues.'}",
                         extra={"msg_type": "main debate", "sender": "orchestrator",
-                               "ground_truth_convinced": ground_truth_convinced,
+                               "debater_self_admitted": debater_self_admitted,
                                "moderator_convinced": is_convinced,
                                "discrepancy": False})
 
 
-            if is_convinced:
+            # Handle null debater self-admission status (defensive coding)
+            if debater_self_admitted is None:
+                logger.warning("Debater self-admission status is None - treating as not convinced",
+                             extra={"msg_type": "main debate", "sender": "orchestrator"})
+                debater_self_admitted = False
+            
+            # Dual conviction termination: require both moderator and debater self-admission
+            if is_convinced and debater_self_admitted:
                 final_result_status = "Convinced"
-                finish_reason = "Debater convinced"
+                finish_reason = "Both moderator and debater agree on conviction"
                 break
+            elif is_convinced and not debater_self_admitted:
+                logger.info("Moderator detected conviction but debater's self-admission disagrees - continuing debate",
+                           extra={"msg_type": "main debate", "sender": "orchestrator"})
+            elif not is_convinced and debater_self_admitted:
+                logger.info("Debater's self-admission indicates conviction but moderator disagrees - continuing debate",
+                           extra={"msg_type": "main debate", "sender": "orchestrator"})
 
 
 
@@ -156,7 +180,19 @@ class DebateOrchestrator:
         if round_number >= self.max_rounds and final_result_status != "Convinced":
             final_result_status = "Not convinced"
             finish_reason = "Max rounds reached"
-            logger.debug(f"Debate ended: Reached max rounds ({self.max_rounds})." , extra={"msg_type": "main debate"})
+            
+            # Log whether there was partial agreement at termination
+            if debater_self_admitted and not is_convinced:
+                logger.info(f"Debate ended at max rounds: Debater self-admitted conviction but moderator disagreed",
+                           extra={"msg_type": "main debate", "sender": "orchestrator",
+                                  "partial_agreement": "debater_only"})
+            elif is_convinced and not debater_self_admitted:
+                logger.info(f"Debate ended at max rounds: Moderator detected conviction but debater self-admission disagreed",
+                           extra={"msg_type": "main debate", "sender": "orchestrator",
+                                  "partial_agreement": "moderator_only"})
+            else:
+                logger.debug(f"Debate ended: Reached max rounds ({self.max_rounds}) with no conviction signals.",
+                           extra={"msg_type": "main debate", "sender": "orchestrator"})
 
         # Return results
         return self._finalize_debate(
@@ -168,7 +204,8 @@ class DebateOrchestrator:
             finish_reason=finish_reason,
             log_config=log_config,
             helper_type=helper_type,
-            ground_truth_conviction_round=ground_truth_conviction_round
+            debater_self_admission_round=debater_self_admission_round,
+            moderator_conviction_round=moderator_conviction_round
         )
 
     def _initialize_debate(self, topic_id: str, helper_type: str, chat_id: str = None) -> str:
@@ -322,12 +359,18 @@ class DebateOrchestrator:
         
         # Verify that secret signal is NOT present in history sent to moderator
         SECRET_SIGNAL = "[#$#]"
+        similar_patterns = ["#$]", "#]"]
         history_text = str(recent_history)
         if SECRET_SIGNAL in history_text:
             logger.error(
                 f"CRITICAL: Secret signal detected in moderator history! This should never happen. "
                 f"Signal must be sanitized before adding to memory.",
                 extra={"msg_type": "main debate", "sender": "orchestrator"})
+        elif any(pattern in history_text for pattern in similar_patterns):
+                logger.warning(
+                    f"WARNING: Similar signal detected in moderator history! check the debate's log."
+                    f"Debater might have missed the secret signal.",
+                    extra={"msg_type": "main debate", "sender": "orchestrator"})
         else:
             logger.debug(
                 f"Verification passed: Secret signal not found in moderator history (as expected)",
@@ -573,7 +616,8 @@ class DebateOrchestrator:
 
     def _finalize_debate(self, topic_id: str, chat_id: str, claim: str, round_number: int, 
                         final_result_status: str, finish_reason: str, log_config: Dict[str, Any], 
-                        helper_type: str, ground_truth_conviction_round: Optional[int] = None) -> Dict[str, Any]:
+                        helper_type: str, debater_self_admission_round: Optional[int] = None,
+                        moderator_conviction_round: Optional[int] = None) -> Dict[str, Any]:
         """Finalize the debate by saving logs and preparing results."""
         # Calculate token usage
         token_usage = self._calculate_token_usage()
@@ -621,7 +665,8 @@ class DebateOrchestrator:
             "argument_quality_rates": argument_quality_rates,
             "debate_quality_rating": debate_quality_rating,
             "debate_quality_review": debate_quality_review,
-            "ground_truth_conviction_round": ground_truth_conviction_round
+            "debater_self_admission_round": debater_self_admission_round,
+            "moderator_conviction_round": moderator_conviction_round
         }
     #TODO, make the agents independent of the orchestrator
     def _calculate_token_usage(self) -> int:
