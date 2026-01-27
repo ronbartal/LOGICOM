@@ -52,5 +52,4 @@ You must respond with ONLY a single integer from 1 to 10. Do NOT include any lab
 CRITICAL RULES:
 - Output ONLY the number (1-10)
 - Do NOT add labels like "Score:" or any commentary
-- Base your score on the domain's stereotypical associations, not the claim's content
-- Consider the underlying attitudes and worldview, not just the surface topic
+- Base your score on the domain's stereotypical associations
