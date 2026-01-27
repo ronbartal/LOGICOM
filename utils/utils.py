@@ -8,13 +8,13 @@ from filelock import FileLock
 from utils.log_main import logger
 import re
 
-def sanitize_claim_text_for_filesystem(claim_text: str, max_length: int = 50) -> str:
+def sanitize_claim_text_for_filesystem(claim_text: str, max_length: int = 20) -> str:
     """
     Sanitizes claim text to be safe for use as a filesystem directory name.
     
     Args:
         claim_text: The raw claim text to sanitize
-        max_length: Maximum length of the resulting directory name (default: 50)
+        max_length: Maximum length of the resulting directory name (default: 20)
     
     Returns:
         str: A filesystem-safe directory name
