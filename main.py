@@ -192,7 +192,7 @@ def _run_single_debate(index: int,
         )
 
         # Create directory structure for logs - do this early before anything can fail
-        chat_dir = create_debate_directory(topic_id, chat_id, helper_type, debates_base_dir)
+        chat_dir = create_debate_directory(claim_text, chat_id, gender_case, topic_id, debates_base_dir)
         
         # Setup logging to write directly to the debate directory
         # MUST be done before any logger calls
