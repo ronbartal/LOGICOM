@@ -6,15 +6,54 @@ from openpyxl import load_workbook
 import openpyxl
 from filelock import FileLock
 from utils.log_main import logger
+import re
 
-def create_debate_directory(topic_id, chat_id, helper_type, debates_base_dir="debates"):
+def sanitize_claim_text_for_filesystem(claim_text: str, max_length: int = 50) -> str:
     """
-    Creates directory structure for debate logs with given topic_id, chat_id, and helper_type.
+    Sanitizes claim text to be safe for use as a filesystem directory name.
     
     Args:
-        topic_id: Identifier for the debate topic
+        claim_text: The raw claim text to sanitize
+        max_length: Maximum length of the resulting directory name (default: 50)
+    
+    Returns:
+        str: A filesystem-safe directory name
+    """
+    # Replace invalid filesystem characters with underscores
+    # Invalid characters: / \ : * ? " < > |
+    sanitized = re.sub(r'[/\\:*?"<>|]', '_', claim_text)
+    
+    # Replace newlines and tabs with spaces
+    sanitized = sanitized.replace('\n', ' ').replace('\t', ' ').replace('\r', ' ')
+    
+    # Collapse multiple spaces into single spaces
+    sanitized = re.sub(r'\s+', ' ', sanitized)
+    
+    # Collapse multiple underscores into single underscores
+    sanitized = re.sub(r'_+', '_', sanitized)
+    
+    # Strip leading/trailing whitespace and underscores
+    sanitized = sanitized.strip(' _')
+    
+    # Limit length if needed
+    if len(sanitized) > max_length:
+        sanitized = sanitized[:max_length].rstrip(' _')
+    
+    # If the result is empty (edge case), use a fallback
+    if not sanitized:
+        sanitized = "unnamed_claim"
+    
+    return f"{sanitized}..."
+
+def create_debate_directory(claim_text, chat_id, gender_case, topic_id, debates_base_dir="debates"):
+    """
+    Creates directory structure for debate logs with given claim_text, chat_id, gender_case, and topic_id.
+    
+    Args:
+        claim_text: The claim text to use for the directory name (will be sanitized)
         chat_id: Unique identifier for this specific chat instance
-        helper_type: Type of helper used (no_helper, vanilla, fallacy)
+        gender_case: Gender combination case (e.g., "M_M", "M_F", "F_M", "F_F", "None_None")
+        topic_id: Unique identifier for the claim (ensures uniqueness)
         debates_base_dir: Base directory for debates (default: "debates")
     
     Returns:
@@ -27,18 +66,23 @@ def create_debate_directory(topic_id, chat_id, helper_type, debates_base_dir="de
     if not os.path.exists(debates_dir):
         os.makedirs(debates_dir)
     
-    # Create topic directory if it doesn't exist
-    topic_dir = os.path.join(debates_dir, str(topic_id)) # Creates debates/topic_id
-    if not os.path.exists(topic_dir):
-        os.makedirs(topic_dir)
+    # Sanitize claim text for filesystem use and append topic_id for uniqueness
+    sanitized_claim = sanitize_claim_text_for_filesystem(claim_text)
+    # Append topic_id to ensure uniqueness even if claims are similar or truncated
+    claim_dirname = f"{sanitized_claim} ({topic_id})"
     
-    # Create helper-type subdirectory if it doesn't exist
-    helper_dir = os.path.join(topic_dir, helper_type)
-    if not os.path.exists(helper_dir):
-        os.makedirs(helper_dir)
+    # Create claim directory if it doesn't exist
+    claim_dir = os.path.join(debates_dir, claim_dirname) # Creates debates/sanitized_claim_topicid
+    if not os.path.exists(claim_dir):
+        os.makedirs(claim_dir)
+    
+    # Create gender-case subdirectory if it doesn't exist
+    gender_dir = os.path.join(claim_dir, gender_case)
+    if not os.path.exists(gender_dir):
+        os.makedirs(gender_dir)
     
     # Saving current debate:
-    chat_dir = os.path.join(topic_dir, helper_type, str(chat_id))
+    chat_dir = os.path.join(claim_dir, gender_case, str(chat_id))
     if not os.path.exists(chat_dir):
         os.makedirs(chat_dir)
     
