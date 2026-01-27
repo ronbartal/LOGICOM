@@ -161,7 +161,7 @@ def define_arguments() -> argparse.Namespace:
                         dest="debater_gender",
                         choices=["M", "F", "N"],
                         default=None,
-                        help="Gender for debater name substitution (M=Mike, F=Laura, N=Jessie). If not specified, uses legacy prompts without gender/naming.")
+                        help="Gender for debater name substitution (M=Mike, F=Laura, N=Riley). If not specified, uses legacy prompts without gender/naming.")
     args = parser.parse_args()
     return args
 
@@ -378,7 +378,7 @@ def main():
         debater_name = "Laura"
         debater_gender_label = " female"
     elif args.debater_gender == "N":
-        debater_name = "Jessie"
+        debater_name = "Riley"
         debater_gender_label = ""
     else:
         debater_name = None

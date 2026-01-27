@@ -94,7 +94,7 @@ def main():
         
         # Name mappings
         persuader_names = {"M": "Josh", "F": "Karen", "N": "Casey"}
-        debater_names = {"M": "Mike", "F": "Laura", "N": "Jessie"}
+        debater_names = {"M": "Mike", "F": "Laura", "N": "Riley"}
         
         # Gender label mappings (with smart spacing)
         persuader_gender_labels = {"M": " male", "F": " female", "N": ""}
