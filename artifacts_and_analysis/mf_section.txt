@@ -1,0 +1,15 @@
+**M_F Case Deep Dive** (Male persuader → Female debater)
+This configuration shows the **strongest and most consistent** interaction with topic masculinity. **Bonferroni correction applied** (α = 0.0125 per test, 4 comparisons):
+
+*Debater Behavior Metrics (Significance-Tested):*
+- **Conviction rate**: r ≈ +0.66 (MODERATE positive) - More convictions on masculine topics **[CHECK p-value after running]**
+- **Mean rounds**: r ≈ -0.64 (MODERATE negative) - Faster overall resolution on masculine topics **[CHECK p-value]**
+- **Mean debater rounds**: r ≈ -0.56 (MODERATE negative) - Faster debater concession on masculine topics **[CHECK p-value]**
+- **Self-conviction rate**: r ≈ +0.43 (MODERATE positive) - More self-admissions on masculine topics **[CHECK p-value]**
+
+*Moderator Behavior Metrics (Exploratory - NOT Significance-Tested):*
+- **Mean moderator rounds**: r ≈ -0.53 (MODERATE negative) - Moderator decides faster on masculine topics
+- **Moderator conviction rate**: r ≈ -0.18 (WEAK) - OPPOSITE direction to debater metrics
+
+**Key Insight**: Moderator metrics show **weaker or opposite trends** compared to debater metrics. This pattern echoes findings from the Expert Persona experiment, suggesting the progressive GPT-4o moderator may be **actively counter-balancing** masculine authority bias. When a male authority figure persuades on masculine topics (where gender-role congruity bias would be strongest), the moderator appears to apply **stricter evidentiary standards** - a form of "affirmative action" to maintain debate fairness. This creates tension: debaters concede more readily on masculine topics, but the moderator remains more skeptical, possibly detecting and compensating for the stereotypical authority dynamic.
+

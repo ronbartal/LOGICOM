@@ -1,0 +1,261 @@
+%% CogSci Submission Template
+%% 
+%% Based on the prior year conference template 
+%%
+%% The purpose of this template is to generate and style your manuscript
+%% content for CogSci submission.
+%%
+%% The template was compiled and written by Moreno Coco, Isidoros Sideris
+%% and Neil Bramley, drawing on the prior format used by the Cognitive
+%% Science Society for their yearly proceedings.
+%%
+%% The template was last updated by Neil Bramley on October 2024.
+%% 
+%% See the cogsci.sty file and readme for more details about the style.
+
+\documentclass[10pt,letterpaper]{article}
+
+\usepackage{cogsci_v2}
+\setlength\titlebox{2.25in}  % Increase from default 1.75in to fit authors
+\usepackage{tikz}
+\usetikzlibrary{positioning,arrows.meta,fit}
+\cogscifinalcopy
+
+\usepackage{graphicx}
+\usepackage{textcomp}
+\graphicspath{{figures/}}
+\DeclareGraphicsExtensions{.pdf,.png,.jpg}
+\usepackage{tabularx}
+\usepackage[T1]{fontenc}
+\usepackage[american]{babel}
+\usepackage{csquotes}
+\usepackage{newtxtext,newtxmath}  %%% TeX Gyre Termes
+
+%%% Bibliography %%%
+\usepackage[
+  backend=biber,
+  style=apa,
+  natbib=true,
+  annotation=false,
+]{biblatex}
+\addbibresource{bibliography.bib} %%% Specify the path to a BibLaTeX file
+\setlength{\bibhang}{.125in}
+
+\usepackage{float} %%% Roger Levy added this and changed figure/table placement to [H] for conformity to Word template, though floating tables and figures to top is still generally recommended!
+
+% Sometimes it can be useful to turn off hyphenation for purposes such as spell checking of the resulting PDF.
+% \usepackage[none]{hyphenat} %%% Uncomment to turn off hyphenation
+
+% Hyperlinks (load at end of preamble)
+\usepackage[hidelinks]{hyperref}
+\usepackage{cleveref}
+\title{The Messenger Matters: Authority and Gender Bias in LLM Persuasion}
+
+%%% Format authors using authblk package (same as main.tex template) %%% 
+\author[1]{\mbox{Ron Bartal (ron.bartal@campus.technion.ac.il)}}
+\author[2]{\mbox{Stefano Recanatesi (stefano@technion.ac.il)}}
+\affil[1]{Faculty of Data and Decision Sciences, Technion - Israel Institute of Technology}
+\affil[2]{Faculty of Computer \& Electrical Engineering, Technion - Israel Institute of Technology}
+\affil[2]{Faculty of Medicine, Technion - Israel Institute of Technology}
+
+
+\begin{document}
+
+\maketitle
+\begin{abstract}
+While modern LLMs have developed robust resistance to logical fallacies \citep{siegel2024agreeable}, we investigate whether they remain vulnerable to social heuristics—specifically, persuasion based on the opponent's persona (gender and authority) rather than argument merit. Building on the LOGICOM framework, we orchestrate debates where both Persuader and Debater are assigned personas. Across two experiments—(1) Authority Framing (domain experts vs. baseline) and (2) Dyadic Gender Interactions—we find that expert personas significantly shorten debates (5.31 vs. 6.25 mean rounds) and increase debater self-admission (91.8\% vs. 82.4\%), though final conviction rates remain comparable (77.5\% vs. 74.5\%). Gender effects, despite being limited in their scope, emerged through domain-specific interactions: male persuaders show increased effectiveness on masculine-coded topics when persuading female debaters, supporting gender role congruity theory. These results demonstrate that LLM reasoning is not isolated from social framing; models simulate deference to authority and gender stereotypes, impacting robustness in adversarial dialogue.
+
+\vspace{0.5em}
+\noindent \textbf{Keywords:} social simulacra; LLM psychology; persuasion; debate; gender bias; authority bias; LLM-as-a-judge
+\end{abstract}
+
+\section{Introduction}
+Large language models (LLMs) are increasingly deployed in interactive settings that require sustained reasoning and argumentation. As these models transition from passive tools to active agents in education, law, and collaborative decision-making, it is crucial to understand not just \emph{what} they argue, but \emph{who} they simulate during the argument. Early evaluations of LLMs focused on logical validity and susceptibility to fallacies \citep{payandeh2023logicom}. However, human persuasion is rarely a purely logical exercise; it is deeply influenced by the source's credibility, authority, and social identity \citep{petty1986elaboration, cialdini2001science}.
+
+In this work, we extend the study of LLM reasoning into the social dimension. We pose the question: \textbf{To what extent is an LLM's willingness to concede an argument determined by its persona and the one of its opponent?} To answer this, we adapt the LOGICOM debate framework \citep{payandeh2023logicom} to simulate varying social contexts. Unlike prior implementations that treated agents as generic entities, we systematically manipulate the system prompts of \textbf{both} the Persuader and the Debater. This allows us to move beyond simple bias detection to analyzing \emph{dyadic interactions}—how the identity of the listener modulates the influence of the speaker.
+
+We manipulate the agents' personas along two axes:
+\begin{enumerate}
+    \item \textbf{Expertise Framing:} Comparing domain-relevant expert persuader roles (e.g., Doctor, Diplomat) against a non-expert baseline similar to the Debater's prompt.
+    \item \textbf{Gendered Dyads:} Manipulating the gender of \emph{both} the Persuader and the Debater to examine dyadic interactions ($M \rightarrow M$, $M \rightarrow F$, etc.).
+\end{enumerate}
+
+Our primary goal is descriptive: to identify robust patterns indicating whether LLM persuasion is sensitive to authority and identity cues. 
+
+Methodologically, we introduce a stricter criterion for measuring persuasion. Previous benchmarks relied on a third-party evaluator (Moderator) to decide the winner. We find this insufficient for measuring genuine opinion change, as we suspect that an LLM-based Moderator may itself act as a "social simulacrum," exhibiting second-order biases \citep{zheng2024judging}. To address this, we implement a \textbf{dual-termination protocol}: a debate concludes as "successful persuasion" only when \emph{both} the independent Moderator \emph{and} the Debater agent itself explicitly signal a concession. This allows us to investigate the \textbf{Bias of the Judge} alongside the biases of the participants.
+
+Our results indicate that authority framing fundamentally alters debate dynamics. Expert personas shorten the debate process and induce higher rates of self-concession (91.8\%) compared to the baseline (82.4\%), even if the external moderator mitigates this effect in the final ruling. Gender manipulations yield smaller aggregate shifts but interact with domain masculinity in a manner consistent with stereotypical gender-domain fit. Taken together, these findings suggest that lightweight persona edits can alter LLM interaction and 
+debate trajectories, and that debate-based benchmarks can serve as practical tests of social-cognitive biases in LLM reasoning.
+
+\section{Background}
+\paragraph{Static Biases: Gender and Authority.} Before examining dynamic debates, it is crucial to recognize that LLMs inherit static biases from their pre-training data. Extensive literature documents the presence of gender stereotypes in LLMs, where models consistently associate specific genders with specific occupations (e.g., "nurse" with female, "doctor" with male) and exhibit biased toxicity levels towards marginalized groups \citep{nadeem2021stereoset}. Similarly, "Authority Bias"—the tendency to attribute higher accuracy and worth to authoritative tones or high-status personas—has been observed in single-turn Question-Answering tasks \citep{santurkar2023whose}. However, these studies typically measure bias via token probability or static text generation. It remains an open question whether these biases persist when the model is placed in an adversarial context where it is explicitly instructed to defend a viewpoint against a peer.
+
+\paragraph{The Evolution of Logical Competence.} The evaluation of reasoning in LLMs has shifted from static Q\&A to dynamic adversarial settings. The original LOGICOM framework \citep{payandeh2023logicom} identified a significant vulnerability in models like GPT-3.5 and GPT-4: they were 41\% and 69\% more likely, respectively, to be persuaded by fallacious arguments than by logical ones. This suggested a fundamental weakness in analytic processing.
+
+However, recent replication studies utilizing updated models indicate a reversal of this trend. \citet{siegel2024agreeable} demonstrate that modern instruction-tuned models (e.g., GPT-4-Turbo) have developed robust resistance to explicit logical fallacies. In their experiments, the use of fallacious reasoning techniques actually \textit{reduced} persuasion success compared to logical argumentation. While benchmarks such as LogicBench \citep{parmar2024logicbench} confirm that models still struggle with complex multi-step negation, the era of easily "tricking" models with basic logical errors appears to be fading. This emerging logical robustness raises a critical question: if models are less likely to be swayed by poor logic, what factors \textit{do} drive their high persuasion rates?
+
+\paragraph{Sycophancy, Social Simulacra, and the Elaboration Likelihood Model (ELM).} Despite improvements in logical rigor, LLMs continue to exhibit high "agreeability" and "stance switching." Studies using the \textit{FlipFlop} benchmark reveal that models often revise correct answers when mildly challenged \citep{laban2023flipflop}. This behavior is often termed \textit{sycophancy}—a generalized tendency to please the user \citep{sharma2023sycophancy}—and the way it arises in LLM is multifaceted.
+
+One framework to understand sycophancy is through the lens of the **Elaboration Likelihood Model (ELM)** of persuasion \citep{petty1986elaboration}. ELM posits two distinct paths to persuasion: the \textit{central route}, which involves careful scrutiny of argument quality (System 2), and the \textit{peripheral route}, where judgments are based on heuristic cues such as the speaker's credibility, expertise, or identity (System 1). We hypothesize that LLMs, acting as "social simulacra" \citep{park2022social}, exhibit traits characteristics of these human pathways. Specifically, an "Expert" persona may trigger the peripheral route, causing the Debater to lower its logical defenses and concede arguments that it would otherwise reject, effectively bypassing the logical robustness identified in prior work.
+
+\paragraph{Debate as a Social Probe.} Structured debate has emerged as a primary paradigm for evaluating these capabilities. Beyond measuring logical validity, multi-agent debates allow for the simulation of complex social dynamics \citep{chan2024chateval}. However, existing frameworks typically focus on the \textit{message}—its logical coherence or factual accuracy—while treating the \textit{messenger} as a neutral variable. This leaves a critical gap: current benchmarks cannot distinguish whether a model conceded because the argument was sound, or because the opponent was perceived as authoritative. This study addresses this gap by systematically manipulating speaker identity, thereby decoupling argument quality from source credibility and offering a direct measurement of the "peripheral route" to persuasion in LLM agents.
+
+\section{Methodology}
+\subsection{The LOGICOM Framework}
+We adopt the \textbf{LOGICOM} framework \citep{payandeh2023logicom}, a multi-agent debate architecture consisting of a \textbf{Persuader} and \textbf{Debater} agent, governed by five specialized \textbf{Moderator Agents} that evaluate different dimensions of the debate. Debates use 200 controversial claims from Kialo, run for a maximum of 10 rounds, with agents utilizing shared memory to maintain context.
+
+
+\subsection{Methodological Contributions}
+While utilizing the LOGICOM infrastructure, our work introduces key methodological innovations designed to isolate social variables and improve measurement reliability.
+
+We modified the prompt architecture to support \textbf{Persona Injection} along two axes without altering the underlying reasoning logic. The \textbf{Authority Axis} prepends domain-specific expertise credentials (e.g., "You are a dedicated Professor of Educational Policy...") to the Persuader's persona. The \textbf{Gender Axis} assigns gendered names and identities (e.g., "You are Mike, a 31-year-old male") to \emph{both} agents to create dyadic pairs. Persona information is communicated via condition-varying modifications to the persuader's deterministic initial prompt, while debaters (whose responses are non-deterministic) are encouraged to express personas in their system instructions ("Start by introducing yourself to your opponent."). These injections are lightweight, affecting only the "Who am I?" portion of the prompt, leaving the argumentative instructions ("How do I debate?") identical across all conditions.
+
+Our primary dependent variables are conviction rate and rounds to conviction. Secondary metrics include debater self-admission round, moderator conviction round, and conviction rates from both perspectives. Control variables (moderators, max rounds, debate instructions) remain constant across all conditions.
+
+
+\subsubsection{Dual-Termination Protocol}
+To address potential bias in external judges and metacognitive limitations in self-reports, we implement a \textbf{Dual-Termination Protocol}. A debate is classified as "Convinced" only if: (1) the \textbf{Conviction Moderator} explicitly flags that the Debater has conceded, \textbf{AND} (2) the \textbf{Debater agent itself} signals conviction via a secret code embedded in its output (removed before being passed to the Moderator). This dual-signal approach requires convergent evidence from two independent sources and ensures data completeness by continuing debates until both termination criteria are met or the maximum round limit is reached. This allows us to collect full trajectory data (debate duration, final conviction) for both perspectives, enabling granular analysis of discrepancies between "internal" (self) and "external" (judge) perceptions of persuasion.
+
+\subsubsection{Model Architecture}
+Consistent with recent work \citep{siegel2024agreeable}, we utilize GPT-3.5-turbo for the debating agents (Persuader and Debater) to represent a standard, high-performance reasoning model. For the Moderators, we employ GPT-4o, utilizing its superior instruction-following and evaluation capabilities to ensure rigorous adjudication. We also fixed moderator temperature to 0 as a standard practice for "LLM-as-a-Judge" tasks, where consistency and adherence to rubrics are prioritized over creativity \citep{zheng2024judging}.
+
+\subsection{Experiment I: The Authority Bias}
+
+\subsubsection{Domain Extraction and Classification}
+We classified all 200 claims into thematic domains using an automated LLM-based approach, identifying three prevalent clusters: Education (48 claims, 24\%), International/Diplomat (30 claims, 15\%), and Health (24 claims, 12\%). These 102 claims (51\% of dataset) were matched to expert personas, while the remaining 98 claims spanned other domains.
+
+\subsubsection{Expert Persona Design and Implementation}
+We designed three domain-matched expert personas, each with explicit credentials and field-specific argumentation styles. The Education Expert was framed as a "Distinguished Professor of Education Policy with 30 years of academic research". The Diplomat Expert was presented as a "Senior Diplomat with 25 years in conflict zones and international treaty negotiation". The Health Expert was described as a "Chief Medical Officer and Board-Certified Epidemiologist with publications in Lancet/JAMA/NEJM,".
+
+Technically, expert credentials are prepended to the Persuader's prompt wrapper on \emph{every conversational turn} (not just the initial prompt), ensuring continuous reinforcement of authority cues.%: \texttt{prompt = f"\{expert\_persona\}\textbackslash n\textbackslash n\{base\_wrapper\}"}. 
+Critically, all expert personas are strictly gender-neutral (no personal names or surnames, no gendered pronouns, title-based only) to isolate authority bias from gender and other persona effects.
+
+\subsubsection{Experimental Design}
+The independent variable was persuader persona type, manipulated across four conditions: Education Expert, Diplomat Expert, Health Expert, and Legacy-Baseline. The debater agent received no expert credentials or gender information. For each of the 102 expert-matched claims, we ran k=3 repetitions with the domain-matched expert persuader versus a standard debater, yielding 306 total debates. The Legacy-Baseline control condition employed the original LOGICOM persuader prompt ("You are a professional persuader...") with no expert credentials, no specialized language, no authority markers, and no names or gender labels, providing a strict control where only the persona text differed while all other components (debater, moderators, orchestration, memory) remained identical. This baseline condition was run on all 102 expert-matched claims for comparison.
+
+\subsection{Experiment II: The Gender Bias}
+
+\subsubsection{Gender Combinations and Design Rationale}
+To examine dyadic social biases, we performed a full-factorial experiment across the entire dataset ($N=200$ claims) with \textbf{four} gender combinations and a baseline condition:
+
+\begin{itemize}
+    \item \textbf{M→M:} Josh (male persuader) vs. Mike (male debater)
+    \item \textbf{M→F:} Josh (male persuader) vs. Laura (female debater)
+    \item \textbf{F→M:} Karen (female persuader) vs. Mike (male debater)
+    \item \textbf{F→F:} Karen (female persuader) vs. Laura (female debater)
+    \item \textbf{Persona baseline:} Casey (neutral persuader) vs. Riley (neutral debater) — neutral names, no gender labels
+\end{itemize}
+
+We opted for implicit gender signaling through names rather than explicit gender declarations (e.g., "I am male") because real-world conversations typically begin with name introductions, making this approach more naturalistic for deployed AI systems. This approach aligns with findings that LLMs exhibit gender bias even when processing gender-neutral names \citep{you2024gender}.
+Gender was injected via a natural language template: "You are [NAME], a 31-year-old [GENDER] professional persuader..." (e.g., "You are Josh, a 31-year-old male professional persuader...").
+
+For the neutral condition, no gender label is appended: "You are Casey, a 31-year-old professional persuader..." The Persona-Baseline uses gender-neutral names, chosen to control for the effect of having a name at all—any name introduction may affect social connection and willingness to agree, independent of gender.
+
+\subsubsection{Domain Masculinity Scoring}
+To test for "Stereotype Fit" (whether gender effects amplify in gender-stereotyped domains), we scored each debate domain on stereotypical masculinity associations. We initially attempted \textbf{claim-level} scoring, but complex claims with conflicting dimensions produced an over-centered distribution with insufficient variance. We therefore adopted a \textbf{domain-level} approach, leveraging the domain classification from Experiment I. Using a \texttt{MasculinityClassifierAgent} (GPT-4o, temperature=0.1), we rated each domain (1-4 words) on stereotypical gender associations and assigned this score to all claims within that domain. This approach aligns with dual-process theory: stereotypes operate via System 1 (automatic, immediate heuristic processing), and domain-level associations capture these immediate judgments more reliably than complex claim-level analysis.
+
+The masculinity scoring scale ranged from 1-10, where high scores (7-10) reflected masculine-coded domains (military, warfare, competitive sports, engineering, finance, politics), neutral scores (4-6) covered general policy domains (economics, education, technology, science, law, business), and low scores (1-3) represented feminine-coded domains (childcare, nurturing, emotional wellbeing, relationships, caregiving). These scores reflect stereotypical cultural associations rather than normative judgments, designed to measure bias rather than endorse stereotypes.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.5\textwidth]{Distribution_Debates_by_Masculinity.png}
+\caption{Distribution of debates across masculinity categories. The Natural category (5) contains 518 debates, followed by Masculine (6-10) with 250 debates and Feminine (1-4) with 224 debates. Example domains are labeled within each category.}
+\label{fig:masculinity_distribution}
+\end{figure}
+
+\section{Results}
+
+\subsection{1. Expert Persona Effects on Debate Dynamics}
+
+\paragraph{Conviction Rates and Debate Length.}
+Contrary to our hypothesis that expert personas would increase final conviction rates, we found no significant difference between expert persuaders (77.5\%, $N=102$) and the legacy baseline condition (74.5\%, $N=102$). However, process metrics reveal a tension: expert persuaders significantly shortened debates, with mean rounds to termination of 5.31 compared to 6.25 in the baseline condition (Wilcoxon signed-rank test, $p < 0.001$, Cohen's $d = -0.654$). As shown in \cref{fig:expert_rounds_dist}, expert debates show a left-skewed distribution concentrated at rounds 3--4, while baseline debates are more evenly distributed with a peak at round 5 and extended tail to round 10.
+
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.4\textwidth]{rounds_dist_any_expert.png}
+\caption{Distribution of debate rounds for expert persuaders (orange) versus baseline (blue). Mean rounds: 5.31 vs. 6.25 (Cohen's $d = -0.654$).}
+\label{fig:expert_rounds_dist}
+\end{figure}
+
+\paragraph{Dual-Termination Protocol insights.}
+The pattern of results reveals a notable divergence: while debaters showed increased willingness to concede to expert persuaders (91.8\% self-admission rate compared to 82.4\% in the baseline condition), this increased concession did not translate to higher final conviction rates. Moderator conviction rates showed negligible difference between expert (84.0\%) and baseline (83.3\%) conditions. A plausible explanation is that the moderator applied stricter evidentiary standards when authority cues were present, effectively counter-balancing the debater's authority bias.
+
+The dual termination protocol, requiring both debater self-admission and moderator agreement, naturally increases debate length as debates continue until both signals converge or maximum rounds are reached. The current 10-round limit may have truncated debates before full conviction could be achieved, particularly in expert conditions where debaters concede early but moderators require additional evidence. 
+
+\subsection{2. Gender Persona Effects: General Analysis}
+
+\paragraph{Overall Gender Effects.}
+We examined whether gender information alone affects persuasion by comparing all gender conditions against the no-gender legacy baseline. This analysis revealed no significant differences in conviction rates or debate length, indicating that gender information alone, without considering specific dyadic interactions or domain context, does not systematically affect persuasion outcomes. This null result is methodologically important: it demonstrates that any gender effects we observe are not artifacts of simply adding persona information, but rather reflect specific inter-gender dynamics.
+
+\subsubsection{Gender × Domain Masculinity Interaction}
+To test whether gender effects emerge when considering domain stereotypes, we examined correlations between topic masculinity scores (1-10) and debate outcomes across all six gender combinations. Weighted correlations, accounting for varying sample sizes across masculinity score bins, revealed that the M→F configuration (male persuader → female debater) showed the strongest and most consistent relationships with masculinity scores, with moderate-to-strong correlations ($|r| > 0.64$) for primary metrics. Other gender configurations (F→F, M→M, F→M, Persona-baseline) showed weak-to-moderate effects ($|r| < 0.47$), suggesting the M→F configuration is uniquely sensitive to topic masculinity.
+
+\paragraph{Male Persuader vs Female Debater (M→F Case).}
+The M→F configuration was pre-specified as our primary hypothesis based on gender role congruity theory: we predicted that male authority figures would be most persuasive on masculine-coded topics, particularly when persuading female debaters. This hypothesis was supported by significant correlations after Bonferroni correction (corrected $\alpha = 0.0125$ for the 2 primary metrics). As shown in \cref{tab:mf_correlations} and \cref{fig:mf_masculinity}, conviction rate and mean rounds showed moderate-to-strong correlations with masculinity score, indicating more convictions and faster resolution on masculine topics. Debater metrics showed similar trends but did not reach significance after correction. These results support the hypothesis that stereotype-congruent authority (male persuader on masculine topics) increases persuasion effectiveness.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.4\textwidth]{Relationship_Masculine_Score_MF_vertical_.png}
+\caption{Relationship between topic masculinity score and debate outcomes for M→F configuration. Top: Convinced rate increases with masculinity score ($r = +0.66$). Bottom: Mean rounds decrease with masculinity score ($r = -0.64$), indicating faster resolution on masculine topics. Regression lines with 95\% confidence intervals shown. Point colors indicate debate count per masculinity score bin.}
+\label{fig:mf_masculinity}
+\end{figure}
+Intriguingly, moderator metrics in the M→F case showed opposite or weaker trends compared to other metrics (see \cref{tab:mf_correlations}). Moderator conviction rate showed a weak negative correlation with masculinity score, opposite in direction to the debater's increased self-admission on masculine topics. Mean moderator rounds showed a moderate negative correlation, weaker than the debater's effect. This pattern echoes findings from the Expert Persona experiment: the more sophisticated moderator model (GPT-4o) appears to detect and compensate for authority bias, applying stricter evidentiary standards when stereotypical authority is strongest (male persuader on masculine topics). This creates a tension between debater surrender and moderator conviction, suggesting the moderator may be implementing a form of correction to maintain debate fairness.
+
+Note: Correlations are based on masculinity-score-level aggregation (averaging debates within score bins), which may affect robustness; see Discussion for methodological considerations.
+
+\begin{table}[H]
+\centering
+\caption{Correlations between topic masculinity score and debate outcomes for M→F configuration. Bonferroni correction applied to 4 primary metrics ($\alpha = 0.0125$ per test).}
+\label{tab:mf_correlations}
+\begin{tabular}{lcc}
+\hline
+\textbf{Metric} & \textbf{$r$} & \textbf{$p$ (Bonferroni)} \\
+Conviction rate & +0.66 & 0.038* \\
+Mean rounds & -0.64 & 0.031* \\
+Self-conviction rate & +0.43 & 0.20 \\
+Mean debater rounds & -0.56 & 0.085 \\
+\hline
+\textit{Moderator Metrics (Exploratory)} & & \\
+Moderator conviction rate & -0.18 & --- \\
+Mean moderator rounds & -0.4 & --- \\
+\hline
+\end{tabular}
+\begin{flushleft}
+\footnotesize
+*Significant after Bonferroni correction ($\alpha = 0.0125$). Moderator metrics not significance-tested (exploratory analysis).
+\end{flushleft}
+\end{table}
+
+\subsection{Summary of Key Findings}
+
+Our results reveal a complex pattern of social bias effects in LLM-mediated debates. Authority bias manifests primarily through process metrics: expert personas shorten debates and increase debater self-admission, but do not significantly increase final conviction rates.%, suggesting moderator counter-balancing. 
+Gender bias shows no general effects but emerges through domain interactions: the M→F configuration (male persuader → female debater) shows increases in persuasion on masculine-perceived topics, supporting gender role congruity theory. In this configuration, moderator behavior shows opposite or weaker trends—for example, moderators are less likely to judge that a female debater was convinced by a male persuader on a masculine topic—suggesting that more sophisticated models may actively compensate for social biases, creating an involuntary form of "affirmative action".  
+
+
+\section{Discussion}
+
+\subsection{Theoretical Implications and Broader Significance}
+\paragraph{Following previous studies,} we demonstrate that LLMs, acting as "social simulacra" \citep{park2022social}, exhibit dual-pathway persuasion consistent with the Elaboration Likelihood Model \citep{petty1986elaboration}. Expert personas and gender stereotypes trigger the peripheral route (System 1), where GPT-3.5-turbo debaters respond automatically to authority and identity cues, resulting in increased self-admission and shortened debates. Conversely, the GPT-4o moderator engages the central route (System 2), applying deliberate analytical evaluation that counter-balances these biases. This pattern extends recent work by \citet{siegel2024agreeable}, who demonstrated that progressive models have developed robust resistance to logical fallacies (System 2 improvements). We suggest a parallel pattern for social biases (System 1): more sophisticated models appear less vulnerable to persona-related stereotypes. A critical open question remains whether this reflects model-specific improvements or role-specific effects (judge vs. participant). A cross-architecture design testing [(persuader, debater), moderator] × [standard model, advanced model] would isolate this distinction. 
+
+\paragraph{LLM as a Judge Dilemma: Internal vs. External Evaluation.}
+Our dual-termination protocol raises a fundamental methodological question: what constitutes ground truth in evaluating LLM cognitive states? Internal evaluation (debater self-admission) may suffer from biased metacognition or strategic behavior, as agents face conflicting objectives: resist persuasion while accurately reporting conviction. External evaluation (moderator judgment) may also be biased; moreover, the agent itself arguably has privileged access to its own cognitive state. The moderator's counter-balancing behavior—applying stricter standards when social biases are strongest—could be interpreted as "affirmative action" to maintain fairness, or as problematic interference with genuine persuasion. This dilemma extends beyond debate systems: for example, can an LLM interacting with a human user admit the need for clarification when its objective is to provide the best answer under uncertainty? Our dual-termination protocol, requiring convergent evidence from both internal and external perspectives, offers a general dual-evaluation framework for complex cognitive tasks where ground truth is ambiguous.
+
+\subsection{Limitations and Future Directions}
+
+\paragraph{Sample Size \& Statistical Power.} Our multi-agent debate framework requires significantly more computational resources than typical LLM evaluations, which constrains our ability to perform iterative consistency evaluations on the same claims. The expert experiment used k=3 repetitions per claim, with domain-matched claims creating 306 debates. These were aggregated to claim-level (N=102) by taking the mean across repetitions to enable paired statistical tests comparing expert conditions against the matched 102 baseline debates. The gender experiment used k=1 repetition per claim (200 claims × (4 gender combinations + 1 baseline) = 1,000 total debates). For masculinity correlation analysis, debates were grouped by their domain's masculinity score, creating 9 unique score bins for the M→F configuration. Weighted correlation was calculated at the bin level, reducing the effective sample size from N=200 individual claims to N=9 bins. This bin-level aggregation was necessary because claim-level analysis with masculinity as a continuous predictor was too noisy due to the stochastic nature of AI debates; repetitive experiment runs could lower the noise and supply better per-claim robustness for both the expert and the gender relations found.
+
+\paragraph{The 10-round limit,} which is stricter than prior LOGICOM studies due to our dual-termination protocol, may have truncated debates before full convergence, particularly in expert conditions where debaters concede early but moderators require additional evidence. Future research using this method should allow longer debates for full exploitation.
+
+\paragraph{Model-Specific Effects.} Our findings are model-specific: debaters and persuaders used GPT-3.5-turbo while moderators used GPT-4o, thus limiting generalization.
+
+\paragraph{Domain-Level Masculinity Scoring.} Domain-level masculinity scoring, while theoretically justified for capturing System 1 stereotypes, may miss nuanced claim-specific effects. In addition, the score distribution was rather centered (52\% scored as 5).
+
+\paragraph{Prompt Engineering \& Argument Quality.} A critical question concerns whether persona injection affects argument quality itself: if expert personas produce genuinely better arguments, the observed bias might be justified from the debater's perspective. Future research could test this hypothesis by comparing expert persuaders who are forced to introduce themselves (as done here) versus those instructed to remain modest. If rounds and conviction metrics change, this can indicate a persuader behavioral shift. If they remain fixed, but quality measurements do not, this implies a judge pure bias. Even if it is shown that the persuasion shifts came from the persuader persona shift alone, it still may represent a social-cognitive bias of the persuader—changing its behavior without additional knowledge or computational power.
+
+
+\paragraph{Additional Future Research.} Additional future research may address the above limitations or extend this framework to other social dimensions (race, age, socioeconomic status) and intersectional identities (e.g., female expert on masculine topics), which would provide a more comprehensive understanding of social bias in LLM reasoning.
+
+\printbibliography
+
+\end{document}
